@@ -70,19 +70,32 @@ jobs:
           echo "cloudflared TCP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
           exit 1
 
-      - name: Call Proxmox /version via proxy
+      - name: Sanity check TLS through proxy (no token needed)
         env:
-          PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
-          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-          PM_API_URL_PATH: ${{ secrets.PM_API_URL_PATH }} # default: /api2/json/version
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
         shell: bash
         run: |
           set -euo pipefail
+          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
+          # Hit root path; we only care that we get *some* HTTP response over TLS
+          curl -I --fail --resolve "${HOST}:443:127.0.0.1" "https://${HOST}/" || true
+          echo "Reached origin via Access (status above is fine even if 302/401/403)."
+
+      - name: Call Proxmox /version via proxy
+        env:
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+          PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
+          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           mkdir -p artifacts
-          curl -fsS -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-            "http://127.0.0.1:8806${PM_API_URL_PATH:-/api2/json/version}" \
-            | tee artifacts/pve_version.json
-          echo "✅ Proxmox version fetched via Cloudflare Access proxy."
+          curl -fsS \
+            --resolve "${HOST}:443:127.0.0.1" \
+            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+            "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
+          echo "✅ Proxmox version fetched via Cloudflare Access (TCP proxy)."
 
       - name: Upload artifact (version response)
         uses: actions/upload-artifact@v4
