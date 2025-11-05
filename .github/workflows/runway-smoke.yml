@@ -81,30 +81,30 @@ jobs:
           echo "✅ Connected to origin through Access HTTP proxy."
 
       # Only run the version call if both Proxmox token secrets are present
-      - name: Call Proxmox /version via proxy (if token provided)
-        if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
-        env:
-          PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
-          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts
-          curl -fsS -v \
-            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-            "http://127.0.0.1:8806/api2/json/version" | tee artifacts/pve_version.json
-          echo "✅ Proxmox version fetched via Cloudflare Access HTTP proxy."
+      # - name: Call Proxmox /version via proxy (if token provided)
+      #   if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
+      #   env:
+      #     PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
+      #     PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+      #   shell: bash
+      #   run: |
+      #     set -euo pipefail
+      #     mkdir -p artifacts
+      #     curl -fsS -v \
+      #       -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+      #       "http://127.0.0.1:8806/api2/json/version" | tee artifacts/pve_version.json
+      #     echo "✅ Proxmox version fetched via Cloudflare Access HTTP proxy."
 
-      - name: Upload artifact (version response if present)
-        if: ${{ hashFiles('artifacts/pve_version.json') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: pve-version
-          path: artifacts/pve_version.json
+      # - name: Upload artifact (version response if present)
+      #   if: ${{ hashFiles('artifacts/pve_version.json') != '' }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: pve-version
+      #     path: artifacts/pve_version.json
 
-      - name: Attach cloudflared logs (on failure)
-        if: failure()
-        shell: bash
-        run: |
-          echo "--- cloudflared.log (tail) ---"
-          test -f cloudflared.log && tail -n 400 cloudflared.log || echo "no log"
+      # - name: Attach cloudflared logs (on failure)
+      #   if: failure()
+      #   shell: bash
+      #   run: |
+      #     echo "--- cloudflared.log (tail) ---"
+      #     test -f cloudflared.log && tail -n 400 cloudflared.log || echo "no log"
