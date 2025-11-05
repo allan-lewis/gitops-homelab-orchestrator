@@ -43,26 +43,40 @@ jobs:
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }} # e.g. pve-api.example.com
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com  (no scheme)
         shell: bash
         run: |
           set -euo pipefail
-          # Start local HTTP proxy to your Access-protected Proxmox API
+
+          # Normalize to a bare host (strip any scheme if you accidentally included it)
+          HOST="${PVE_ACCESS_HOST#https://}"
+          HOST="${HOST#http://}"
+
+          echo "Using Access hostname: ${HOST}"
+
+          # Start a local HTTP proxy to your Access-protected Proxmox API
           nohup ./cloudflared.bin access http \
-            --hostname "https://${PVE_ACCESS_HOST}" \
+            --hostname "https://${HOST}" \
             --listen 127.0.0.1:8806 > cloudflared.log 2>&1 &
 
-          # Wait for proxy to accept connections
+          # Wait for cloudflared to bind OR fail; check the log if it doesn't come up
           for i in {1..30}; do
             sleep 1
             if curl -sS http://127.0.0.1:8806/ >/dev/null ; then
               echo "cloudflared proxy is up"
-              break
+              exit 0
             fi
-            if [[ $i -eq 30 ]]; then
-              echo "cloudflared proxy failed to start"; exit 1
+            # If the process died, dump logs and fail fast
+            if ! pgrep -f "cloudflared.bin access http" >/dev/null; then
+              echo "cloudflared exited early; logs follow:"
+              sed -n '1,200p' cloudflared.log || true
+              exit 1
             fi
           done
+
+          echo "cloudflared proxy failed to start within timeout; logs follow:"
+          sed -n '1,200p' cloudflared.log || true
+          exit 1
 
       - name: Call Proxmox /version via proxy
         env:
