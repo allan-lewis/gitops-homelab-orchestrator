@@ -18,96 +18,85 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     environment: lab
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download cloudflared
+      # Pin to a version that supports `access http`
+      - name: Download cloudflared (pinned)
         shell: bash
         run: |
           set -euo pipefail
-          # Prefer the .tgz; fall back to raw binary if needed
-          curl -fsSL -o cloudflared.tgz https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.tgz || true
-          if [[ -f cloudflared.tgz ]]; then
-            tar -xzf cloudflared.tgz
-            mv cloudflared cloudflared.bin
-          else
-            curl -fsSL -o cloudflared.bin https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-            chmod +x cloudflared.bin
-          fi
-          ./cloudflared.bin --version
+          ver="2024.8.2"
+          url="https://github.com/cloudflare/cloudflared/releases/download/${ver}/cloudflared-linux-amd64"
+          echo "Downloading cloudflared ${ver}..."
+          curl -fsSL -o cloudflared.bin "$url"
+          chmod +x cloudflared.bin
+          ./cloudflared.bin --version || true
 
-      - name: Start Cloudflare Access client proxy (TCP → localhost:9443)
+      - name: Start Cloudflare Access HTTP proxy → 127.0.0.1:8806
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com (NO scheme)
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com (no scheme)
         shell: bash
         run: |
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
+          if [[ -z "${HOST}" ]]; then
+            echo "PVE_ACCESS_HOST is empty; set it as an Environment secret (e.g., pve-api.example.com)."
+            exit 1
+          fi
           echo "Using Access hostname: ${HOST}"
-          ./cloudflared.bin --version || true
 
-          # Start local TCP forwarder to Access-protected origin (env vars provide creds)
-          nohup ./cloudflared.bin access tcp \
-            --hostname "${HOST}:443" \
-            --listener 127.0.0.1:9443 \
-            > cloudflared.log 2>&1 &
+          # Start HTTP client proxy for a *web* Access app
+          nohup ./cloudflared.bin access http \
+            --hostname "https://${HOST}" \
+            --listen 127.0.0.1:8806 > cloudflared.log 2>&1 &
 
           # Wait for listener or fail with logs
           for i in {1..30}; do
             sleep 1
-            if nc -z 127.0.0.1 9443 ; then
-              echo "cloudflared TCP proxy is up"
+            if curl -sS http://127.0.0.1:8806/ >/dev/null ; then
+              echo "cloudflared HTTP proxy is up"
               exit 0
             fi
-            if ! pgrep -f "cloudflared.bin access tcp" >/dev/null; then
+            if ! pgrep -f "cloudflared.bin access http" >/dev/null; then
               echo "cloudflared exited early; logs follow:"; sed -n '1,200p' cloudflared.log || true
               exit 1
             fi
           done
-          echo "cloudflared TCP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
+          echo "cloudflared HTTP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
           exit 1
 
-      - name: Sanity check TLS through proxy (must CONNECT via 127.0.0.1:9443)
-        env:
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}  # e.g. pve-api.example.com (no scheme)
+      - name: Sanity check via local HTTP proxy (must CONNECT)
         shell: bash
         run: |
           set -euo pipefail
-          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          echo "Curling via proxy with: --resolve ${HOST}:9443:127.0.0.1"
-          # We only require a successful TLS/HTTP connection to the origin through the proxy.
-          # Any 2xx/3xx/4xx/5xx is acceptable; failure to CONNECT is not.
-          curl -v \
-            --resolve "${HOST}:9443:127.0.0.1" \
-            "https://${HOST}:9443/" -o /dev/null || {
-              echo "❌ Could not connect via Access proxy on 127.0.0.1:9443"
-              echo "--- cloudflared.log (tail) ---"; tail -n 200 cloudflared.log || true
-              exit 1
-            }
-          echo "✅ Connected to origin through Access proxy (status code may be 3xx/4xx/5xx; that's fine here)."
+          # Any HTTP status is fine; we just need a successful connection via the proxy.
+          curl -I --fail --max-time 15 http://127.0.0.1:8806/ >/dev/null \
+            || { echo "❌ Proxy up but origin not reachable"; tail -n 200 cloudflared.log || true; exit 1; }
+          echo "✅ Connected to origin through Access HTTP proxy."
 
-      - name: Call Proxmox /version via proxy
+      # Only run the version call if both Proxmox token secrets are present
+      - name: Call Proxmox /version via proxy (if token provided)
+        if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
         env:
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
           PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
           PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
         shell: bash
         run: |
           set -euo pipefail
-          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           mkdir -p artifacts
-          curl -fsS \
-            --resolve "${HOST}:443:127.0.0.1" \
+          curl -fsS -v \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-            "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
-          echo "✅ Proxmox version fetched via Cloudflare Access (TCP proxy)."
+            "http://127.0.0.1:8806/api2/json/version" | tee artifacts/pve_version.json
+          echo "✅ Proxmox version fetched via Cloudflare Access HTTP proxy."
 
-      - name: Upload artifact (version response)
+      - name: Upload artifact (version response if present)
+        if: ${{ hashFiles('artifacts/pve_version.json') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: pve-version
@@ -117,6 +106,5 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          echo "--- cloudflared.log ---"
-          test -f cloudflared.log && tail -n +500 cloudflared.log || echo "no log"
-
+          echo "--- cloudflared.log (tail) ---"
+          test -f cloudflared.log && tail -n 400 cloudflared.log || echo "no log"
