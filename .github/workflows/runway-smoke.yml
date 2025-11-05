@@ -43,22 +43,25 @@ jobs:
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com (no scheme)
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # just the hostname, no scheme
         shell: bash
         run: |
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           echo "Using Access hostname: ${HOST}"
 
-          # Start a local TCP listener that forwards to your Access-protected HTTPS origin
+          # Start local TCP forwarder to Access-protected origin (explicitly pass creds)
           nohup ./cloudflared.bin access tcp \
             --hostname "${HOST}:443" \
-            --listener 127.0.0.1:9443 > cloudflared.log 2>&1 &
+            --listener 127.0.0.1:9443 \
+            --access-client-id "${CF_ACCESS_CLIENT_ID}" \
+            --access-client-secret "${CF_ACCESS_CLIENT_SECRET}" \
+            > cloudflared.log 2>&1 &
 
-          # Wait for the listener or show logs if it dies
+          # Wait for listener or fail with logs
           for i in {1..30}; do
             sleep 1
-            if nc -z 127.0.0.1 9443 ; then
+            if nc -z 127.0.0.1 9443; then
               echo "cloudflared TCP proxy is up"
               exit 0
             fi
@@ -70,16 +73,25 @@ jobs:
           echo "cloudflared TCP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
           exit 1
 
-      - name: Sanity check TLS through proxy (no token needed)
+      - name: Sanity check TLS through proxy (expect 200/3xx/4xx, but must CONNECT)
         env:
           PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
         shell: bash
         run: |
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          # Hit root path; we only care that we get *some* HTTP response over TLS
-          curl -I --fail --resolve "${HOST}:443:127.0.0.1" "https://${HOST}/" || true
-          echo "Reached origin via Access (status above is fine even if 302/401/403)."
+          echo "Curling via proxy with: --resolve ${HOST}:443:127.0.0.1"
+          # -v: verbose; --resolve forces DNS+SNI to hit 127.0.0.1 while presenting HOST
+          # We only test connectivity here; 401/403 is fine (means we reached origin).
+          curl -v --fail-early \
+            --resolve "${HOST}:443:127.0.0.1" \
+            "https://${HOST}/" -o /dev/null || {
+              echo "❌ Could not connect to origin via Access proxy."
+              echo "--- cloudflared.log (tail) ---"
+              tail -n 200 cloudflared.log || true
+              exit 1
+            }
+          echo "✅ Connected to origin through Access proxy (HTTP status may be 3xx/4xx/5xx and that's OK for this step)."
 
       - name: Call Proxmox /version via proxy
         env:
