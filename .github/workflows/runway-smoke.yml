@@ -52,32 +52,31 @@ jobs:
           fi
           echo "✅ Got expected 401."
 
-      # --- OPTIONAL: repeat call with Proxmox API token; saves response as artifact ---
-      # - name: Proxmox /version with PM token (if provided)
-      #   if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
-      #   env:
-      #     PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
-      #     CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      #     CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      #     PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
-      #     PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-      #   shell: bash
-      #   run: |
-      #     set -euo pipefail
-      #     HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-      #     echo "GET https://${HOST}/api2/json/version (CF-Access + Proxmox token)"
-      #     curl -fsS -v \
-      #       -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
-      #       -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-      #       -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-      #       "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
-      #     echo "✅ Proxmox version fetched."
+      - name: Proxmox /version with PM token (if provided)
+        if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
+        env:
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
+          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
+          echo "GET https://${HOST}/api2/json/version (CF-Access + Proxmox token)"
+          curl -fsS -v \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+            "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
+          echo "✅ Proxmox version fetched."
 
-      # - name: Upload artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: pve-version-checks
-      #     path: |
-      #       artifacts/sanity_version.json
-      #       artifacts/pve_version.json
-      #     if-no-files-found: ignore
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pve-version-checks
+          path: |
+            artifacts/sanity_version.json
+            artifacts/pve_version.json
+          if-no-files-found: ignore
