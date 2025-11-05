@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       # --- SANITY: GET /api2/json/version with CF-Access headers (no PM token needed) ---
-      - name: Sanity GET /api2/json/version via Access
+      - name: Sanity GET /api2/json/version via Access (expect 401)
         env:
           PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}           # e.g. pve-api.example.com (NO scheme)
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}   # ends with .access
@@ -35,22 +35,22 @@ jobs:
         run: |
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          if [[ -z "${HOST}" ]]; then echo "PVE_ACCESS_HOST is empty"; exit 1; fi
-          echo "GET https://${HOST}/api2/json/version (CF-Access headers only)"
-          # Capture HTTP code while keeping body
-          HTTP_CODE=$(curl -sS -o resp.json -w "%{http_code}" \
+          echo "GET https://${HOST}/api2/json/version (CF-Access headers only; expect 401)"
+          mkdir -p artifacts
+          HTTP_CODE=$(curl -sS -D artifacts/sanity_headers.txt -o artifacts/sanity_body.json -w "%{http_code}" \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "https://${HOST}/api2/json/version") || { echo "Transport error calling origin"; exit 1; }
+            "https://${HOST}/api2/json/version" || true)
+
           echo "HTTP ${HTTP_CODE}"
-          # Consider any HTTP response a connectivity success (2xx/3xx/4xx/5xx prove path works)
-          if [[ ! -s resp.json ]]; then echo "Empty response body"; exit 1; fi
-          # Quick smoke: ensure JSON-like payload
-          if ! head -c 1 resp.json | grep -q '{'; then
-            echo "Unexpected response (not JSON?)"; sed -n '1,80p' resp.json; exit 1
+          # Treat ONLY 401 as success; fail otherwise
+          if [[ "${HTTP_CODE}" -ne 401 ]]; then
+            echo "❌ Expected 401, got ${HTTP_CODE}"
+            echo "---- Headers ----"; sed -n '1,120p' artifacts/sanity_headers.txt || true
+            echo "---- Body (first 200 bytes) ----"; head -c 200 artifacts/sanity_body.json || true; echo
+            exit 1
           fi
-          mkdir -p artifacts && mv resp.json artifacts/sanity_version.json
-          echo "✅ Access path OK."
+          echo "✅ Got expected 401."
 
       # --- OPTIONAL: repeat call with Proxmox API token; saves response as artifact ---
       # - name: Proxmox /version with PM token (if provided)
