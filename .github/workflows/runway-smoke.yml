@@ -72,22 +72,24 @@ jobs:
           echo "cloudflared TCP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
           exit 1
 
-      - name: Sanity check TLS through proxy (must CONNECT)
+      - name: Sanity check TLS through proxy (must CONNECT via 127.0.0.1:9443)
         env:
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}  # e.g. pve-api.example.com (no scheme)
         shell: bash
         run: |
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          echo "Curling via proxy with: --resolve ${HOST}:443:127.0.0.1"
-          curl -v --fail-early \
-            --resolve "${HOST}:443:127.0.0.1" \
-            "https://${HOST}/" -o /dev/null || {
-              echo "❌ Could not connect via Access proxy."
+          echo "Curling via proxy with: --resolve ${HOST}:9443:127.0.0.1"
+          # We only require a successful TLS/HTTP connection to the origin through the proxy.
+          # Any 2xx/3xx/4xx/5xx is acceptable; failure to CONNECT is not.
+          curl -v \
+            --resolve "${HOST}:9443:127.0.0.1" \
+            "https://${HOST}:9443/" -o /dev/null || {
+              echo "❌ Could not connect via Access proxy on 127.0.0.1:9443"
               echo "--- cloudflared.log (tail) ---"; tail -n 200 cloudflared.log || true
               exit 1
             }
-          echo "✅ Connected to origin through Access proxy (HTTP status code can be 3xx/4xx/5xx and that’s OK here)."
+          echo "✅ Connected to origin through Access proxy (status code may be 3xx/4xx/5xx; that's fine here)."
 
       - name: Call Proxmox /version via proxy
         env:
