@@ -25,7 +25,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sanity check — reach Access app (no Proxmox token needed)
+      # --- SANITY: GET /api2/json/version with CF-Access headers (no PM token needed) ---
+      - name: Sanity GET /api2/json/version via Access
         env:
           PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}           # e.g. pve-api.example.com (NO scheme)
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}   # ends with .access
@@ -35,10 +36,48 @@ jobs:
           set -euo pipefail
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           if [[ -z "${HOST}" ]]; then echo "PVE_ACCESS_HOST is empty"; exit 1; fi
-          echo "Hitting https://${HOST}/ with CF-Access service token headers"
-          # Any 2xx/3xx/4xx/5xx is fine — we just need to CONNECT via Access
-          curl -I --fail --max-time 15 "https://${HOST}/" \
+          echo "GET https://${HOST}/api2/json/version (CF-Access headers only)"
+          # Capture HTTP code while keeping body
+          HTTP_CODE=$(curl -sS -o resp.json -w "%{http_code}" \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            >/dev/null
-          echo "✅ Access path OK (service token accepted)."
+            "https://${HOST}/api2/json/version") || { echo "Transport error calling origin"; exit 1; }
+          echo "HTTP ${HTTP_CODE}"
+          # Consider any HTTP response a connectivity success (2xx/3xx/4xx/5xx prove path works)
+          if [[ ! -s resp.json ]]; then echo "Empty response body"; exit 1; fi
+          # Quick smoke: ensure JSON-like payload
+          if ! head -c 1 resp.json | grep -q '{'; then
+            echo "Unexpected response (not JSON?)"; sed -n '1,80p' resp.json; exit 1
+          fi
+          mkdir -p artifacts && mv resp.json artifacts/sanity_version.json
+          echo "✅ Access path OK."
+
+      # --- OPTIONAL: repeat call with Proxmox API token; saves response as artifact ---
+      - name: Proxmox /version with PM token (if provided)
+        if: ${{ secrets.PM_TOKEN_ID && secrets.PM_TOKEN_SECRET }}
+        env:
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
+          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
+          echo "GET https://${HOST}/api2/json/version (CF-Access + Proxmox token)"
+          curl -fsS -v \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+            "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
+          echo "✅ Proxmox version fetched."
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pve-version-checks
+          path: |
+            artifacts/sanity_version.json
+            artifacts/pve_version.json
+          if-no-files-found: ignore
