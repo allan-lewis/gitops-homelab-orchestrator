@@ -39,43 +39,35 @@ jobs:
           fi
           ./cloudflared.bin --version
 
-      - name: Start Cloudflare Access client proxy (HTTP → localhost)
+      - name: Start Cloudflare Access client proxy (TCP → localhost:9443)
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com  (no scheme)
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. pve-api.example.com (no scheme)
         shell: bash
         run: |
           set -euo pipefail
-
-          # Normalize to a bare host (strip any scheme if you accidentally included it)
-          HOST="${PVE_ACCESS_HOST#https://}"
-          HOST="${HOST#http://}"
-
+          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           echo "Using Access hostname: ${HOST}"
 
-          # Start a local HTTP proxy to your Access-protected Proxmox API
-          nohup ./cloudflared.bin access http \
-            --hostname "https://${HOST}" \
-            --listen 127.0.0.1:8806 > cloudflared.log 2>&1 &
+          # Start a local TCP listener that forwards to your Access-protected HTTPS origin
+          nohup ./cloudflared.bin access tcp \
+            --hostname "${HOST}:443" \
+            --listener 127.0.0.1:9443 > cloudflared.log 2>&1 &
 
-          # Wait for cloudflared to bind OR fail; check the log if it doesn't come up
+          # Wait for the listener or show logs if it dies
           for i in {1..30}; do
             sleep 1
-            if curl -sS http://127.0.0.1:8806/ >/dev/null ; then
-              echo "cloudflared proxy is up"
+            if nc -z 127.0.0.1 9443 ; then
+              echo "cloudflared TCP proxy is up"
               exit 0
             fi
-            # If the process died, dump logs and fail fast
-            if ! pgrep -f "cloudflared.bin access http" >/dev/null; then
-              echo "cloudflared exited early; logs follow:"
-              sed -n '1,200p' cloudflared.log || true
+            if ! pgrep -f "cloudflared.bin access tcp" >/dev/null; then
+              echo "cloudflared exited early; logs follow:"; sed -n '1,200p' cloudflared.log || true
               exit 1
             fi
           done
-
-          echo "cloudflared proxy failed to start within timeout; logs follow:"
-          sed -n '1,200p' cloudflared.log || true
+          echo "cloudflared TCP proxy failed to start; logs follow:"; sed -n '1,200p' cloudflared.log || true
           exit 1
 
       - name: Call Proxmox /version via proxy
