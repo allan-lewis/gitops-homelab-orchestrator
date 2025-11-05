@@ -1,0 +1,5 @@
+# basics
+.DS_Store
+*.log
+artifacts/
+

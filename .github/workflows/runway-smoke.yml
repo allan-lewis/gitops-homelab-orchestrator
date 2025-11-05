@@ -1,0 +1,93 @@
+name: L0 runway smoke (proxy only)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/runway-smoke.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/runway-smoke.yml'
+
+concurrency:
+  group: l0-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    environment: lab
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download cloudflared
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Prefer the .tgz; fall back to raw binary if needed
+          curl -fsSL -o cloudflared.tgz https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.tgz || true
+          if [[ -f cloudflared.tgz ]]; then
+            tar -xzf cloudflared.tgz
+            mv cloudflared cloudflared.bin
+          else
+            curl -fsSL -o cloudflared.bin https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+            chmod +x cloudflared.bin
+          fi
+          ./cloudflared.bin --version
+
+      - name: Start Cloudflare Access client proxy (HTTP → localhost)
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }} # e.g. pve-api.example.com
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Start local HTTP proxy to your Access-protected Proxmox API
+          nohup ./cloudflared.bin access http \
+            --hostname "https://${PVE_ACCESS_HOST}" \
+            --listen 127.0.0.1:8806 > cloudflared.log 2>&1 &
+
+          # Wait for proxy to accept connections
+          for i in {1..30}; do
+            sleep 1
+            if curl -sS http://127.0.0.1:8806/ >/dev/null ; then
+              echo "cloudflared proxy is up"
+              break
+            fi
+            if [[ $i -eq 30 ]]; then
+              echo "cloudflared proxy failed to start"; exit 1
+            fi
+          done
+
+      - name: Call Proxmox /version via proxy
+        env:
+          PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
+          PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+          PM_API_URL_PATH: ${{ secrets.PM_API_URL_PATH }} # default: /api2/json/version
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          curl -fsS -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+            "http://127.0.0.1:8806${PM_API_URL_PATH:-/api2/json/version}" \
+            | tee artifacts/pve_version.json
+          echo "✅ Proxmox version fetched via Cloudflare Access proxy."
+
+      - name: Upload artifact (version response)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pve-version
+          path: artifacts/pve_version.json
+
+      - name: Attach cloudflared logs (on failure)
+        if: failure()
+        shell: bash
+        run: |
+          echo "--- cloudflared.log ---"
+          test -f cloudflared.log && tail -n +500 cloudflared.log || echo "no log"
+
