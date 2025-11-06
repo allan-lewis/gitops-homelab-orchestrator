@@ -1,0 +1,17 @@
+---
+# Inputs pulled from env unless provided by inventory/extra-vars
+pve_access_host: "{{ lookup('env','PVE_ACCESS_HOST') | default('', true) }}"
+pm_token_id: "{{ lookup('env','PM_TOKEN_ID') | default('', true) }}"
+pm_token_secret: "{{ lookup('env','PM_TOKEN_SECRET') | default('', true) }}"
+pve_node: "{{ lookup('env','PVE_NODE') | default('', true) }}"
+pve_storage_iso: "{{ lookup('env','PVE_STORAGE_ISO') | default('local', true) }}"
+pve_storage_vm: "{{ lookup('env','PVE_STORAGE_VM') | default('', true) }}"
+pve_bridge: "{{ lookup('env','PVE_BRIDGE') | default('vmbr0', true) }}"
+
+# Thresholds
+l0_min_free_gib_iso: "{{ (lookup('env','L0_MIN_FREE_GIB_ISO') | default('4', true)) | float }}"
+l0_min_free_pct_vm:  "{{ (lookup('env','L0_MIN_FREE_PCT_VM')  | default('10', true)) | float }}"
+
+# Template policy
+template_prefix:    "{{ lookup('env','TEMPLATE_PREFIX') | default('arch-', true) }}"
+template_retention: "{{ (lookup('env','TEMPLATE_RETENTION') | default('3', true)) | int }}"

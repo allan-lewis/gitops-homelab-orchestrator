@@ -1,5 +1,90 @@
-# basics
+# -----------------------------
+# OS and editor junk
+# -----------------------------
 .DS_Store
-*.log
-artifacts/
+Thumbs.db
+*.swp
+*.swo
+*.bak
+*.tmp
+~$*
+.vscode/
+.idea/
 
+# -----------------------------
+# Python / Ansible internals
+# -----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.retry
+*.log
+*.tar.gz
+
+# -----------------------------
+# Environment / credentials
+# -----------------------------
+.env
+.env.*
+secrets.yml
+*.vault
+*.key
+*.pem
+*.crt
+*.csr
+*.pub
+*.secret
+
+# -----------------------------
+# Artifacts / build output
+# -----------------------------
+artifacts/
+*.json
+*.gz
+*.zip
+*.tgz
+
+# Keep the manifest structure but ignore its contents
+!artifacts/.gitkeep
+
+# -----------------------------
+# Ansible cache
+# -----------------------------
+.ansible/
+*.retry
+
+# -----------------------------
+# Terraform / Packer (future layers)
+# -----------------------------
+*.tfstate
+*.tfstate.*
+.terraform/
+packer_cache/
+*.iso
+output-*/
+
+# -----------------------------
+# Local runtime / tmp
+# -----------------------------
+*.lock
+*.pid
+*.sock
+tmp/
+logs/
+cache/
+
+# -----------------------------
+# GitHub Actions runner junk
+# -----------------------------
+*.out
+*.err
+*.log
+*.coverage
+
+# -----------------------------
+# macOS metadata
+# -----------------------------
+.AppleDouble
+.Spotlight-V100
+.Trashes
+Icon?

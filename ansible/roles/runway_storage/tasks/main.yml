@@ -1,0 +1,65 @@
+---
+- name: GET ISO storage status
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/nodes/{{ pve_node }}/storage/{{ pve_storage_iso }}/status"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _iso
+  failed_when: false
+
+- name: Record ISO storage
+  copy:
+    dest: "{{ artifacts_dir }}/storage_{{ pve_storage_iso }}.json"
+    mode: '0644'
+    content: "{{ (_iso.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: GET VM storage status
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/nodes/{{ pve_node }}/storage/{{ pve_storage_vm }}/status"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _vmstore
+  failed_when: false
+
+- name: Record VM storage
+  copy:
+    dest: "{{ artifacts_dir }}/storage_{{ pve_storage_vm }}.json"
+    mode: '0644'
+    content: "{{ (_vmstore.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Compute storage free (GiB and %)
+  set_fact:
+    iso_free_gib: >-
+      {{ (((_iso.json.data.avail | default(0)) | int) / (1024**3)) | float | round(2) }}
+    vm_free_pct: >-
+      {{ (
+           ((_vmstore.json.data.avail | default(0)) | float) /
+           (
+             ((_vmstore.json.data.total | default(1)) | float)
+             if ((_vmstore.json.data.total | default(1)) | float) > 0
+             else 1
+           )
+         ) * 100.0 | round(2) }}
+
+- name: Enforce storage thresholds (soft – add reason, don’t abort)
+  set_fact:
+    fail_reasons: "{{ fail_reasons + [ reason ] }}"
+  vars:
+    reason: >-
+      {{ 'Insufficient free space on '
+         ~ (pve_storage_iso if iso_free_gib < l0_min_free_gib_iso else pve_storage_vm)
+         ~ ( ' (ISO store: ' ~ iso_free_gib ~ ' GiB)' if iso_free_gib < l0_min_free_gib_iso
+             else ' (VM store free: ' ~ vm_free_pct ~ '%)' ) }}
+  when: iso_free_gib < l0_min_free_gib_iso or vm_free_pct < l0_min_free_pct_vm

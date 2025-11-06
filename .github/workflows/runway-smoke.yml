@@ -35,10 +35,7 @@ jobs:
           mkdir -p artifacts
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           echo "GET https://${HOST}/api2/json/version (Proxmox token)"
-          curl -fsS \
-            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-            -o artifacts/pve_version.json \
-            "https://${HOST}/api2/json/version"
+          curl -fsS             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"             -o artifacts/pve_version.json             "https://${HOST}/api2/json/version"
           jq . artifacts/pve_version.json > artifacts/sanity_version.json || cp artifacts/pve_version.json artifacts/sanity_version.json
           echo "✅ Proxmox version fetched successfully."
 

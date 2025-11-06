@@ -1,0 +1,41 @@
+---
+- name: Seed accumulators and safe defaults
+  set_fact:
+    fail_reasons: []
+    runway_summary:
+      runway_status: "INIT"
+      reasons: []
+    _host_stripped: "{{ (pve_access_host | default('') | regex_replace('^https?://','')) }}"
+    _auth_header: "PVEAPIToken={{ pm_token_id }}={{ pm_token_secret }}"
+
+- name: Validate required inputs (soft record)
+  vars:
+    missing: >-
+      {{
+        []
+        + (['PVE_ACCESS_HOST'] if (pve_access_host|length)==0 else [])
+        + (['PM_TOKEN_ID'] if (pm_token_id|length)==0 else [])
+        + (['PM_TOKEN_SECRET'] if (pm_token_secret|length)==0 else [])
+        + (['PVE_NODE'] if (pve_node|length)==0 else [])
+        + (['PVE_STORAGE_VM'] if (pve_storage_vm|length)==0 else [])
+      }}
+  set_fact:
+    fail_reasons: "{{ fail_reasons + ((missing | length > 0) | ternary(['Missing required inputs: ' ~ (missing | join(', '))], [])) }}"
+
+- name: API/auth
+  include_role: { name: runway_api }
+
+- name: Node status
+  include_role: { name: runway_node }
+
+- name: Network / bridge
+  include_role: { name: runway_network }
+
+- name: Storage thresholds
+  include_role: { name: runway_storage }
+
+- name: Template registry
+  include_role: { name: runway_templates }
+
+- name: Assemble manifest & summary
+  include_role: { name: runway_manifest }

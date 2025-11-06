@@ -1,0 +1,35 @@
+---
+- name: GET /nodes
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/nodes"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _nodes
+  failed_when: false
+
+- name: Record nodes
+  copy:
+    dest: "{{ artifacts_dir }}/nodes.json"
+    mode: '0644'
+    content: "{{ (_nodes.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Determine node status
+  set_fact:
+    node_status: >-
+      {{ (_nodes.json.data | default([]) | selectattr('node','equalto', pve_node) | list | first).status
+         | default('missing') }}
+
+- name: Flag node missing/offline
+  set_fact:
+    fail_reasons: "{{ fail_reasons + [ msg ] }}"
+  vars:
+    msg: >-
+      {{ 'Node ' ~ pve_node ~ ' not found' if node_status == 'missing'
+         else ('Node ' ~ pve_node ~ ' not online (status=' ~ node_status ~ ')') }}
+  when: node_status != 'online'

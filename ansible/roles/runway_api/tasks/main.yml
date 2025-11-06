@@ -1,0 +1,26 @@
+---
+- name: GET /version (API reachability & auth)
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/version"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _version
+  failed_when: false
+  when: (_host_stripped|length)>0 and (pm_token_id|length)>0 and (pm_token_secret|length)>0
+
+- name: Record version result
+  copy:
+    dest: "{{ artifacts_dir }}/pve_version.json"
+    mode: '0644'
+    content: "{{ (_version.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Flag API/auth failure
+  set_fact:
+    fail_reasons: "{{ fail_reasons + ['API unreachable or auth failed'] }}"
+  when: _version is not defined or (_version.status | default(0)) != 200

@@ -1,0 +1,35 @@
+---
+- name: L0 Proxmox runway
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    artifacts_dir: "{{ (lookup('env','GITHUB_WORKSPACE') | default(playbook_dir ~ '/../../..', true)) ~ '/artifacts' }}"
+
+  pre_tasks:
+    - name: Ensure artifacts directory exists
+      ansible.builtin.file:
+        path: "{{ artifacts_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Initialize runway_summary default
+      ansible.builtin.set_fact:
+        runway_summary:
+          runway_status: "INIT"
+          reasons: []
+
+  roles:
+    - role: proxmox_runway
+      tags: ['always']
+
+  post_tasks:
+    - name: Print final status
+      ansible.builtin.debug:
+        msg: "{{ runway_summary.runway_status }}: {{ runway_summary.reasons | default([]) }}"
+
+    - name: Fail if runway not OK
+      ansible.builtin.fail:
+        msg: "{{ runway_summary }}"
+      when: runway_summary.runway_status != 'OK'

@@ -1,0 +1,35 @@
+---
+- name: Assemble runway manifest
+  set_fact:
+    runway_manifest:
+      runway_status: "{{ 'FAIL' if (fail_reasons | length) > 0 else 'OK' }}"
+      proxmox:
+        host: "{{ _host_stripped }}"
+        node: "{{ pve_node }}"
+      network:
+        bridge: "{{ pve_bridge }}"
+      storage:
+        iso: { name: "{{ pve_storage_iso }}", free_gib: "{{ (iso_free_gib | default(0.0)) | float }}" }
+        vm:  { name: "{{ pve_storage_vm }}",  free_pct: "{{ (vm_free_pct  | default(0.0)) | float }}" }
+      templates:
+        prefix: "{{ template_prefix }}"
+        keep: "{{ template_retention }}"
+        current:
+          name: "{{ current_template_name | default('') }}"
+          vmid: "{{ (current_template_vmid | default('')) | string }}"
+        prune_plan: "{{ prune_plan | default([]) }}"
+      notes: "L0 performed read-only checks."
+      failures: "{{ fail_reasons }}"
+
+- name: Write runway manifest
+  copy:
+    dest: "{{ artifacts_dir }}/runway_manifest.json"
+    mode: '0644'
+    content: "{{ runway_manifest | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Compute final summary (exported as runway_summary)
+  set_fact:
+    runway_summary:
+      runway_status: "{{ runway_manifest.runway_status }}"
+      reasons: "{{ runway_manifest.failures | default([]) }}"

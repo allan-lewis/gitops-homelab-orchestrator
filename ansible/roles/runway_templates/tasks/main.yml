@@ -1,0 +1,46 @@
+---
+- name: Initialize template_list default
+  set_fact:
+    template_list: []
+  when: template_list is not defined
+
+- name: GET template candidates (cluster/resources?type=vm)
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/cluster/resources?type=vm"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _resources
+  failed_when: false
+
+- name: Record cluster VM resources
+  copy:
+    dest: "{{ artifacts_dir }}/cluster_resources_vm.json"
+    mode: '0644'
+    content: "{{ (_resources.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Filter templates with prefix & compute latest + prune plan
+  set_fact:
+    template_list: >-
+      {{ (_resources.json.data | default([]))
+         | selectattr('template','equalto',1)
+         | selectattr('name','defined')
+         | selectattr('name','search','^' ~ (template_prefix | regex_escape))
+         | list | sort(attribute='vmid') }}
+    current_template_name: "{{ (template_list | last).name | default('') }}"
+    current_template_vmid: "{{ (template_list | last).vmid | default('') }}"
+    prune_plan: >-
+      {{ ((template_list | length) > (template_retention | int))
+        | ternary( template_list[: (template_list | length - (template_retention | int)) ], [] ) }}
+
+- name: Write prune plan
+  copy:
+    dest: "{{ artifacts_dir }}/templates_prune_plan.json"
+    mode: '0644'
+    content: "{{ prune_plan | to_nice_json }}"
+  when: artifacts_dir is defined

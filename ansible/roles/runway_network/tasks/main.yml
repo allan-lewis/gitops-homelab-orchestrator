@@ -1,0 +1,39 @@
+---
+- name: GET /nodes/{{ pve_node }}/network
+  uri:
+    url: "https://{{ _host_stripped }}/api2/json/nodes/{{ pve_node }}/network"
+    method: GET
+    headers:
+      Authorization: "{{ _auth_header }}"
+      Accept: "application/json"
+    return_content: true
+    validate_certs: yes
+    status_code: 200
+  register: _net
+  failed_when: false
+
+- name: Record network
+  copy:
+    dest: "{{ artifacts_dir }}/network_{{ pve_node }}.json"
+    mode: '0644'
+    content: "{{ (_net.json | default({})) | to_nice_json }}"
+  when: artifacts_dir is defined
+
+- name: Inspect bridge presence/active
+  set_fact:
+    bridge_type: >-
+      {{ (_net.json.data | default([]) | selectattr('iface','equalto', pve_bridge) | list | first).type
+         | default('missing') }}
+    bridge_active: >-
+      {{ (_net.json.data | default([]) | selectattr('iface','equalto', pve_bridge) | list | first).active
+         | default('0') }}
+
+- name: Flag missing bridge
+  set_fact:
+    fail_reasons: "{{ fail_reasons + [ 'Bridge ' ~ pve_bridge ~ ' not found on node ' ~ pve_node ] }}"
+  when: bridge_type != 'bridge'
+
+- name: Warn if bridge not active
+  debug:
+    msg: "⚠️ Bridge {{ pve_bridge }} exists but is not active."
+  when: bridge_type == 'bridge' and (bridge_active | string) != '1'
