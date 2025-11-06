@@ -1,5 +1,4 @@
-# .github/workflows/runway-smoke.yml
-name: L0 runway smoke (direct HTTPS with CF-Access headers)
+name: L0 runway smoke (direct HTTPS with Proxmox token)
 
 on:
   workflow_dispatch:
@@ -33,12 +32,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p artifacts
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          echo "GET https://${HOST}/api2/json/version (CF-Access + Proxmox token)"
-          curl -fsS -v \
+          echo "GET https://${HOST}/api2/json/version (Proxmox token)"
+          curl -fsS \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
-            "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
-          echo "✅ Proxmox version fetched."
+            -o artifacts/pve_version.json \
+            "https://${HOST}/api2/json/version"
+          jq . artifacts/pve_version.json > artifacts/sanity_version.json || cp artifacts/pve_version.json artifacts/sanity_version.json
+          echo "✅ Proxmox version fetched successfully."
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
