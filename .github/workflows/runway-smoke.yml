@@ -25,38 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --- SANITY: GET /api2/json/version with CF-Access headers (no PM token needed) ---
-      - name: Sanity GET /api2/json/version via Access (expect 401)
-        env:
-          PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}           # e.g. pve-api.example.com (NO scheme)
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}   # ends with .access
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
-          echo "GET https://${HOST}/api2/json/version (CF-Access headers only; expect 401)"
-          mkdir -p artifacts
-          HTTP_CODE=$(curl -sS -D artifacts/sanity_headers.txt -o artifacts/sanity_body.json -w "%{http_code}" \
-            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
-            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "https://${HOST}/api2/json/version" || true)
-
-          echo "HTTP ${HTTP_CODE}"
-          # Treat ONLY 401 as success; fail otherwise
-          if [[ "${HTTP_CODE}" -ne 401 ]]; then
-            echo "❌ Expected 401, got ${HTTP_CODE}"
-            echo "---- Headers ----"; sed -n '1,120p' artifacts/sanity_headers.txt || true
-            echo "---- Body (first 200 bytes) ----"; head -c 200 artifacts/sanity_body.json || true; echo
-            exit 1
-          fi
-          echo "✅ Got expected 401."
-
       - name: Proxmox /version with PM token (if provided)
         env:
           PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
           PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
         shell: bash
@@ -65,8 +36,6 @@ jobs:
           HOST="${PVE_ACCESS_HOST#https://}"; HOST="${HOST#http://}"
           echo "GET https://${HOST}/api2/json/version (CF-Access + Proxmox token)"
           curl -fsS -v \
-            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
-            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
             "https://${HOST}/api2/json/version" | tee artifacts/pve_version.json
           echo "✅ Proxmox version fetched."
