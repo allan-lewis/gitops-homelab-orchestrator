@@ -88,3 +88,5 @@ cache/
 .Spotlight-V100
 .Trashes
 Icon?
+
+!archinstall_config.json
