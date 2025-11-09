@@ -61,31 +61,47 @@ jobs:
           MANIFEST_PATH="packer/arch/artifacts/packer-manifest.json"
           [[ -f "$MANIFEST_PATH" ]] || { echo "ERROR: Missing $MANIFEST_PATH (did the manifest post-processor run?)"; exit 1; }
 
-          # Extract artifact_id from the most recent build (node/vmid)
           artifact_id="$(jq -r '.builds[-1].artifact_id' "$MANIFEST_PATH")"
           [[ -n "$artifact_id" && "$artifact_id" != "null" ]] || { echo "ERROR: artifact_id missing in manifest"; exit 1; }
-          # Expect format like: "<node>/<vmid>"
-          if ! [[ "$artifact_id" =~ ^[^/]+/[0-9]+$ ]]; then
-            echo "ERROR: Unexpected artifact_id format: '$artifact_id' (expected '<node>/<vmid>')" >&2
-            exit 1
-          fi
-
-          node="${artifact_id%%/*}"
-          vmid="${artifact_id##*/}"
 
           AUTH_HEADER="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
 
-          # Fetch VM config (fail if .data null)
+          node="" ; vmid=""
+
+          if [[ "$artifact_id" =~ ^[^/]+/[0-9]+$ ]]; then
+            # Format: "<node>/<vmid>"
+            node="${artifact_id%%/*}"
+            vmid="${artifact_id##*/}"
+          elif [[ "$artifact_id" =~ ^[0-9]+$ ]]; then
+            # Format: "<vmid>" only — resolve node deterministically
+            vmid="$artifact_id"
+            # Query all VMs; select templates that match this vmid
+            # Require exactly one match, otherwise fail.
+            matches_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
+              | jq -c --arg id "$vmid" '[.data[] | select(.template==1 and (.vmid|tostring)==$id)]')"
+            count="$(jq -r 'length' <<<"$matches_json")"
+            if [[ "$count" -ne 1 ]]; then
+              echo "ERROR: Expected exactly 1 template with vmid=$vmid, found $count" >&2
+              echo "$matches_json" | jq .
+              exit 1
+            fi
+            node="$(jq -r '.[0].node' <<<"$matches_json")"
+          else
+            echo "ERROR: Unexpected artifact_id format: '$artifact_id' (expected '<node>/<vmid>' or '<vmid>')" >&2
+            exit 1
+          fi
+
+          # Fetch config; fail if empty
           cfg_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/nodes/${node}/qemu/${vmid}/config" | jq -er '.data')"
 
-          # Fetch the VM name (must be a template and match vmid+node)
+          # Resolve the template's name using node+vmid; require a match
           name="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
             | jq -r --arg id "$vmid" --arg n "$node" \
               '.data[] | select(.template==1 and (.vmid|tostring)==$id and .node==$n) | .name' \
             | head -n1)"
-
           [[ -n "$name" && "$name" != "null" ]] || { echo "ERROR: Could not resolve template name for node=${node} vmid=${vmid}"; exit 1; }
 
+          mkdir -p artifacts/images
           out="artifacts/images/${name}.json"
           jq -n --arg name "$name" \
                 --arg node "$node" \
