@@ -16,6 +16,7 @@ jobs:
       PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. https://polaris.example.com:8006  (NO /api2/json)
       PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}       # e.g. gitops@pve!gitops
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE: ${{ secrets.PVE_NODE }}
 
     steps:
       - uses: actions/checkout@v4
