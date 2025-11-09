@@ -29,29 +29,29 @@ jobs:
           packer validate .
           packer build .
 
-      # - name: Emit manifest
-      #   id: manifest
-      #   run: |
-      #     set -euo pipefail
-      #     AUTH="Authorization: PVEAPIToken=${{ secrets.PM_TOKEN_ID }}=${{ secrets.PM_TOKEN_SECRET }}"
-      #     HOST="${{ secrets.PVE_ACCESS_HOST }}/api2/json"
-      #     NAME="${{ env.TEMPLATE_NAME }}"
-      #     if [ -z "$NAME" ]; then
-      #       # fall back: prefix+date (matches your locals)
-      #       NAME="${{ env.TEMPLATE_PREFIX }}$(date +%Y%m%d)"
-      #     fi
-      #     vmline=$(curl -ksS -H "$AUTH" "$HOST/cluster/resources?type=vm" \
-      #       | jq -r --arg n "$NAME" '.data[] | select(.template==1 and .name==$n) | "\(.vmid) \(.node)"')
-      #     vmid=$(echo "$vmline" | awk '{print $1}')
-      #     node=$(echo "$vmline" | awk '{print $2}')
-      #     cfg=$(curl -ksS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/config" | jq -r '.data')
-      #     mkdir -p artifacts/images
-      #     jq -n --arg name "$NAME" --arg node "$node" --arg vmid "$vmid" --argjson cfg "$cfg" \
-      #       '{name:$name, node:$node, vmid:($vmid|tonumber), config:$cfg, created_at: now|todate}' \
-      #       > "artifacts/images/${NAME}.json"
-      #     echo "manifest=artifacts/images/${NAME}.json" >> $GITHUB_OUTPUT
+      - name: Emit manifest
+        id: manifest
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: PVEAPIToken=${{ secrets.PM_TOKEN_ID }}=${{ secrets.PM_TOKEN_SECRET }}"
+          HOST="${{ secrets.PVE_ACCESS_HOST }}/api2/json"
+          NAME="${{ env.TEMPLATE_NAME }}"
+          if [ -z "$NAME" ]; then
+            # fall back: prefix+date (matches your locals)
+            NAME="${{ env.TEMPLATE_PREFIX }}$(date +%Y%m%d)"
+          fi
+          vmline=$(curl -ksS -H "$AUTH" "$HOST/cluster/resources?type=vm" \
+            | jq -r --arg n "$NAME" '.data[] | select(.template==1 and .name==$n) | "\(.vmid) \(.node)"')
+          vmid=$(echo "$vmline" | awk '{print $1}')
+          node=$(echo "$vmline" | awk '{print $2}')
+          cfg=$(curl -ksS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/config" | jq -r '.data')
+          mkdir -p artifacts/images
+          jq -n --arg name "$NAME" --arg node "$node" --arg vmid "$vmid" --argjson cfg "$cfg" \
+            '{name:$name, node:$node, vmid:($vmid|tonumber), config:$cfg, created_at: now|todate}' \
+            > "artifacts/images/${NAME}.json"
+          echo "manifest=artifacts/images/${NAME}.json" >> $GITHUB_OUTPUT
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: l1-arch-manifest
-      #     path: ${{ steps.manifest.outputs.manifest }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: l1-arch-manifest
+          path: ${{ steps.manifest.outputs.manifest }}
