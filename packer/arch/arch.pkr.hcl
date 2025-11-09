@@ -68,5 +68,11 @@ source "proxmox-iso" "arch" {
 }
 
 build {
+  name    = "arch"
   sources = ["source.proxmox-iso.arch"]
+
+  post-processor "manifest" {
+    output     = "artifacts/packer-manifest.json"
+    strip_path = true
+  }
 }

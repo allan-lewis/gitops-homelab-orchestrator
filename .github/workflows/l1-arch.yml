@@ -1,55 +1,100 @@
 name: L1 - Arch template build
+
 on:
   workflow_dispatch:
   push:
-    paths: ["packer/arch/**", ".github/workflows/l1-arch.yml"]
+    paths:
+      - "packer/arch/**"
+      - ".github/workflows/l1-arch.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: lab
     env:
-      PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # base host (no /api2/json)
-      PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
+      # Required Proxmox access secrets
+      PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. https://polaris.example.com:8006  (NO /api2/json)
+      PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}       # e.g. gitops@pve!gitops
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-      PVE_NODE:        ${{ secrets.PVE_NODE }}
-      PVE_BRIDGE:      vmbr0
-      PVE_STORAGE_VM:  local-lvm
-      PVE_STORAGE_ISO: local
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install prerequisites (jq, curl)
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq curl
+
       - uses: hashicorp/setup-packer@v2
-        with: { version: latest }
+        with:
+          version: latest
+
+      # Ensure the Packer manifest target directory exists BEFORE build
+      - name: Ensure packer manifest directory exists
+        working-directory: packer/arch
+        shell: bash
+        run: mkdir -p artifacts
 
       - name: Packer init/validate/build
         working-directory: packer/arch
+        shell: bash
         run: |
+          set -euo pipefail
           packer init .
           packer validate .
           packer build .
 
-      - name: Emit manifest
+      - name: Ensure output artifacts directory exists
+        shell: bash
+        run: mkdir -p artifacts/images
+
+      - name: Emit template manifest from VMID (deterministic)
         id: manifest
+        shell: bash
+        env:
+          API_BASE: ${{ env.PVE_ACCESS_HOST }}/api2/json
         run: |
           set -euo pipefail
-          AUTH="Authorization: PVEAPIToken=${{ secrets.PM_TOKEN_ID }}=${{ secrets.PM_TOKEN_SECRET }}"
-          HOST="${{ secrets.PVE_ACCESS_HOST }}/api2/json"
-          NAME="${{ env.TEMPLATE_NAME }}"
-          if [ -z "$NAME" ]; then
-            # fall back: prefix+date (matches your locals)
-            NAME="${{ env.TEMPLATE_PREFIX }}$(date +%Y%m%d)"
+
+          MANIFEST_PATH="packer/arch/artifacts/packer-manifest.json"
+          [[ -f "$MANIFEST_PATH" ]] || { echo "ERROR: Missing $MANIFEST_PATH (did the manifest post-processor run?)"; exit 1; }
+
+          # Extract artifact_id from the most recent build (node/vmid)
+          artifact_id="$(jq -r '.builds[-1].artifact_id' "$MANIFEST_PATH")"
+          [[ -n "$artifact_id" && "$artifact_id" != "null" ]] || { echo "ERROR: artifact_id missing in manifest"; exit 1; }
+          # Expect format like: "<node>/<vmid>"
+          if ! [[ "$artifact_id" =~ ^[^/]+/[0-9]+$ ]]; then
+            echo "ERROR: Unexpected artifact_id format: '$artifact_id' (expected '<node>/<vmid>')" >&2
+            exit 1
           fi
-          vmline=$(curl -ksS -H "$AUTH" "$HOST/cluster/resources?type=vm" \
-            | jq -r --arg n "$NAME" '.data[] | select(.template==1 and .name==$n) | "\(.vmid) \(.node)"')
-          vmid=$(echo "$vmline" | awk '{print $1}')
-          node=$(echo "$vmline" | awk '{print $2}')
-          cfg=$(curl -ksS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/config" | jq -r '.data')
-          mkdir -p artifacts/images
-          jq -n --arg name "$NAME" --arg node "$node" --arg vmid "$vmid" --argjson cfg "$cfg" \
-            '{name:$name, node:$node, vmid:($vmid|tonumber), config:$cfg, created_at: now|todate}' \
-            > "artifacts/images/${NAME}.json"
-          echo "manifest=artifacts/images/${NAME}.json" >> $GITHUB_OUTPUT
+
+          node="${artifact_id%%/*}"
+          vmid="${artifact_id##*/}"
+
+          AUTH_HEADER="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
+
+          # Fetch VM config (fail if .data null)
+          cfg_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/nodes/${node}/qemu/${vmid}/config" | jq -er '.data')"
+
+          # Fetch the VM name (must be a template and match vmid+node)
+          name="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
+            | jq -r --arg id "$vmid" --arg n "$node" \
+              '.data[] | select(.template==1 and (.vmid|tostring)==$id and .node==$n) | .name' \
+            | head -n1)"
+
+          [[ -n "$name" && "$name" != "null" ]] || { echo "ERROR: Could not resolve template name for node=${node} vmid=${vmid}"; exit 1; }
+
+          out="artifacts/images/${name}.json"
+          jq -n --arg name "$name" \
+                --arg node "$node" \
+                --arg vmid "$vmid" \
+                --argjson cfg "$cfg_json" \
+                '{name:$name, node:$node, vmid:($vmid|tonumber), config:$cfg, created_at:(now|todate)}' \
+            > "$out"
+
+          echo "manifest=${out}" >> "$GITHUB_OUTPUT"
+          echo "Wrote $out"
 
       - uses: actions/upload-artifact@v4
         with:
