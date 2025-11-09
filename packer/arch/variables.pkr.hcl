@@ -45,7 +45,7 @@ variable "arch_iso_sha256" {
 
 variable "arch_iso_file" {
   type    = string
-  default = "local:iso/archlinux-2025.11.01-x86_64.iso"
+  default = "local:iso/archlinux-custom-2025.11.07-x86_64.iso"
 }
 
 variable "vm_cores" {
