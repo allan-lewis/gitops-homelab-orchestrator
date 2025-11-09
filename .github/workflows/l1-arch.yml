@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: lab
     env:
       PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # base host (no /api2/json)
       PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}
