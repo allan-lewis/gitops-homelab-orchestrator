@@ -66,40 +66,46 @@ jobs:
 
           AUTH_HEADER="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
 
-          node="" ; vmid=""
+          node="" ; vmid="" ; name=""
 
           if [[ "$artifact_id" =~ ^[^/]+/[0-9]+$ ]]; then
-            # Format: "<node>/<vmid>"
+            # Format "<node>/<vmid>"
             node="${artifact_id%%/*}"
             vmid="${artifact_id##*/}"
+            # Try to get a human name (not required)
+            name="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
+              | jq -r --arg id "$vmid" --arg n "$node" \
+                  '.data[] | select((.vmid|tostring)==$id and .node==$n) | .name' | head -n1)"
           elif [[ "$artifact_id" =~ ^[0-9]+$ ]]; then
-            # Format: "<vmid>" only — resolve node deterministically
+            # Format "<vmid>" only — resolve node deterministically (no template filter here)
             vmid="$artifact_id"
-            # Query all VMs; select templates that match this vmid
-            # Require exactly one match, otherwise fail.
-            matches_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
-              | jq -c --arg id "$vmid" '[.data[] | select(.template==1 and (.vmid|tostring)==$id)]')"
-            count="$(jq -r 'length' <<<"$matches_json")"
+            match="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
+              | jq -c --arg id "$vmid" '[.data[] | select((.vmid|tostring)==$id)]')"
+            count="$(jq -r 'length' <<<"$match")"
             if [[ "$count" -ne 1 ]]; then
-              echo "ERROR: Expected exactly 1 template with vmid=$vmid, found $count" >&2
-              echo "$matches_json" | jq .
-              exit 1
+              echo "ERROR: Expected exactly 1 VM with vmid=$vmid, found $count"; jq . <<<"$match"; exit 1
             fi
-            node="$(jq -r '.[0].node' <<<"$matches_json")"
+            node="$(jq -r '.[0].node' <<<"$match")"
+            name="$(jq -r '.[0].name' <<<"$match")"
           else
             echo "ERROR: Unexpected artifact_id format: '$artifact_id' (expected '<node>/<vmid>' or '<vmid>')" >&2
             exit 1
           fi
 
-          # Fetch config; fail if empty
+          # Fetch config and validate it's a TEMPLATE
           cfg_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/nodes/${node}/qemu/${vmid}/config" | jq -er '.data')"
+          is_template="$(jq -r '.template // 0' <<<"$cfg_json")"
+          if [[ "$is_template" != "1" ]]; then
+            echo "ERROR: VMID ${vmid} on node ${node} is not a template according to /config (template: ${is_template})"
+            exit 1
+          fi
 
-          # Resolve the template's name using node+vmid; require a match
-          name="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
-            | jq -r --arg id "$vmid" --arg n "$node" \
-              '.data[] | select(.template==1 and (.vmid|tostring)==$id and .node==$n) | .name' \
-            | head -n1)"
-          [[ -n "$name" && "$name" != "null" ]] || { echo "ERROR: Could not resolve template name for node=${node} vmid=${vmid}"; exit 1; }
+          # If name was empty, derive one (fallback)
+          if [[ -z "${name}" || "${name}" == "null" ]]; then
+            name="$(jq -r --arg id "$vmid" --arg n "$node" '.data[] | select((.vmid|tostring)==$id and .node==$n) | .name' \
+                    <(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm") | head -n1)"
+            [[ -n "$name" && "$name" != "null" ]] || name="vm-${vmid}"
+          fi
 
           mkdir -p artifacts/images
           out="artifacts/images/${name}.json"
