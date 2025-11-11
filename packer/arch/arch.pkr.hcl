@@ -9,10 +9,10 @@ packer {
 
 source "proxmox-iso" "arch" {
   # --- Authentication & Proxmox connection ---
-  proxmox_url  = var.proxmox_url
-  username     = var.proxmox_username
-  token        = var.proxmox_token
-  node         = var.node
+  proxmox_url = var.proxmox_url
+  username    = var.proxmox_username
+  token       = var.proxmox_token
+  node        = var.node
 
   communicator = "none"
 
@@ -54,7 +54,7 @@ source "proxmox-iso" "arch" {
   }
 
   # --- Delay shutdown so the auto-script can complete ---
-  boot_wait   = "10s"
+  boot_wait    = "10s"
   boot_command = ["<wait3m>"]
 
   # --- Cloud-init for clones ---
