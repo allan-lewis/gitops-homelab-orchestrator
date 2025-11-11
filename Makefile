@@ -13,34 +13,41 @@ include .env
 export
 endif
 
-.PHONY: help smoke l0 clean \
+.PHONY: help clean l0-smoke l0-build l0-clean \
         l1 l1-init l1-validate l1-build l1-manifest l1-clean
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-smoke: ## Call /api2/json/version with Proxmox token and save artifacts
-	@$(RUN) bash -lc "set -euo pipefail; \
-	  mkdir -p artifacts; \
-	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
-	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
-	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
-	  URL=\"$$\{PVE_ACCESS_HOST%/\}/api2/json/version\"; \
-	  echo \"GET $$URL\"; \
-	  curl -fsS -H \"Authorization: PVEAPIToken=$$\{PM_TOKEN_ID\}=$$\{PM_TOKEN_SECRET\}\" \
-	    -o artifacts/pve_version.json \"$$URL\"; \
-	  (jq . artifacts/pve_version.json > artifacts/sanity_version.json) || cp artifacts/pve_version.json artifacts/sanity_version.json; \
-	  echo \"Smoke OK\""
+clean: ## Remove all artifacts
+	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts"
 
-l0: ## Run the L0 runway locally (via Ansible), with Doppler env
+l0-smoke: ## Call /api2/json/version with Proxmox token and save pretty artifacts/l0_smoke_version.json
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  mkdir -p artifacts; \
+	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
+	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
+	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
+	  URL="$${PVE_ACCESS_HOST%/}/api2/json/version"; \
+	  echo "GET $$URL"; \
+	  if command -v jq >/dev/null 2>&1; then \
+	    curl -fsS -H "Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}" "$$URL" \
+	      | jq -S . > artifacts/l0_smoke_version.json; \
+	  else \
+	    curl -fsS -H "Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}" "$$URL" \
+	      > artifacts/l0_smoke_version.json; \
+	  fi; \
+	  echo "Smoke OK -> artifacts/l0_smoke_version.json"'
+
+l0-build: ## Run the L0 runway locally (via Ansible), with Doppler env
 	@$(RUN) bash -lc "set -euo pipefail; \
 	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
 	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
 	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
 	  ansible-playbook ansible/playbooks/l0_runway.yml"
 
-clean: ## Remove artifacts
-	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts/*"
+l0-clean: ## Remove L1 artifacts
+	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts/l0_smoke_version.json"
 
 # --- L1 (Image Build) ---------------------------------------------------------
 # Required env at runtime:
@@ -66,24 +73,25 @@ l1-build: ## Build the Arch template (Packer -> Proxmox) and capture VMID from p
 	  printf "%s\n" "$$vmid" > artifacts/l1_vmid; \
 	  echo "Captured VMID=$$vmid"'
 
-l1-manifest: ## Fetch VM config and save raw JSON (no jq)
+l1-manifest: ## Fetch VM config and save pretty JSON
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
 	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
 	  : "$${PVE_NODE:?Missing PVE_NODE}"; \
-	  mkdir -p artifacts/images; \
+	  mkdir -p artifacts/l1_images; \
 	  [ -f artifacts/l1_vmid ] || { echo "artifacts/l1_vmid not found. Run make l1-build first."; exit 1; }; \
 	  vmid="$$(cat artifacts/l1_vmid)"; \
 	  AUTH="Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}"; \
 	  HOST="$${PVE_ACCESS_HOST%/}/api2/json"; \
-	  out="artifacts/images/qemu-$${vmid}-config.json"; \
+	  out="artifacts/l1_images/qemu-$${vmid}-config.json"; \
 	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$out"; \
-	  curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" -o "$$out"; \
+	  if command -v jq >/dev/null 2>&1; then \
+	    curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" | jq -S . > "$$out"; \
+	  else \
+	    curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" > "$$out"; \
+	  fi; \
 	  echo "Wrote $$out"'
 
 l1-clean: ## Remove L1 outputs and manifests
-	@$(RUN) bash -lc "set -euo pipefail; rm -rf packer/arch/artifacts artifacts/images/* artifacts/l1_vmid artifacts/l1_packer*.log"
-
-# One-shot: run all L1 steps
-l1: l1-init l1-validate l1-build l1-manifest ## Run full L1 locally
+	@$(RUN) bash -lc "set -euo pipefail; rm -rf packer/arch/artifacts artifacts/l1* artifacts/l1_images artifacts/packer-manifest.json"
