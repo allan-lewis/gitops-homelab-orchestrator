@@ -13,83 +13,77 @@ include .env
 export
 endif
 
-.PHONY: help smoke l0 l0-clean \
+.PHONY: help smoke l0 clean \
         l1 l1-init l1-validate l1-build l1-manifest l1-clean
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-# --- Smoke Test ---------------------------------------------------------------
-
 smoke: ## Call /api2/json/version with Proxmox token and save artifacts
-	@$(RUN) bash -lc 'set -euo pipefail; \
+	@$(RUN) bash -lc "set -euo pipefail; \
 	  mkdir -p artifacts; \
-	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
-	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
-	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
-	  URL="$${PVE_ACCESS_HOST%/}/api2/json/version"; \
-	  echo "GET $$URL"; \
-	  curl -fsS \
-	    -H "Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}" \
-	    -o artifacts/pve_version.json \
-	    "$$URL"; \
-	  echo "Smoke OK"'
-
-# --- L0 (Runway and Resource Check) -------------------------------------------
+	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
+	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
+	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
+	  URL=\"$$\{PVE_ACCESS_HOST%/\}/api2/json/version\"; \
+	  echo \"GET $$URL\"; \
+	  curl -fsS -H \"Authorization: PVEAPIToken=$$\{PM_TOKEN_ID\}=$$\{PM_TOKEN_SECRET\}\" \
+	    -o artifacts/pve_version.json \"$$URL\"; \
+	  (jq . artifacts/pve_version.json > artifacts/sanity_version.json) || cp artifacts/pve_version.json artifacts/sanity_version.json; \
+	  echo \"Smoke OK\""
 
 l0: ## Run the L0 runway locally (via Ansible), with Doppler env
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
-	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
-	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
-	  ansible-playbook ansible/playbooks/l0_runway.yml'
+	@$(RUN) bash -lc "set -euo pipefail; \
+	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
+	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
+	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
+	  ansible-playbook ansible/playbooks/l0_runway.yml"
 
-l0-clean: ## Remove artifacts
-	rm -rf artifacts/*
+clean: ## Remove artifacts
+	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts/*"
 
 # --- L1 (Image Build) ---------------------------------------------------------
-
 # Required env at runtime:
 #   PVE_ACCESS_HOST   PM_TOKEN_ID   PM_TOKEN_SECRET
 # Optional (but recommended):
 #   TEMPLATE_NAME  TEMPLATE_PREFIX  PVE_NODE  PVE_BRIDGE  PVE_STORAGE_VM  ARCH_ISO_FILE
 
 l1-init: ## Packer init for L1 (Arch)
-	@$(RUN) bash -lc 'set -euo pipefail; cd packer/arch; packer fmt .; packer init .'
+	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer init ."
 
 l1-validate: ## Validate L1 packer config (with Doppler env)
-	@$(RUN) bash -lc 'set -euo pipefail; cd packer/arch; packer validate .'
+	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer validate ."
 
-l1-build: ## Build the Arch template (Packer -> Proxmox)
+l1-build: ## Build the Arch template (Packer -> Proxmox) and capture VMID from packer-manifest.json
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  mkdir -p artifacts; \
+	  echo "Running Packer build..."; \
+	  packer build packer/arch | tee artifacts/l1_packer.log; \
+	  manifest="artifacts/packer-manifest.json"; \
+	  [ -f "$$manifest" ] || { echo "Missing $$manifest; Packer did not emit a manifest" >&2; exit 1; }; \
+	  vmid="$$(jq -r '\''(.last_run_uuid) as $$id | (.builds[] | select(.packer_run_uuid==$$id) | .artifact_id) // (.builds[-1].artifact_id)'\'' "$$manifest")"; \
+	  case "$$vmid" in ""|*[!0-9]*) echo "Could not parse numeric VMID from $$manifest (got: $$vmid)" >&2; exit 1;; esac; \
+	  printf "%s\n" "$$vmid" > artifacts/l1_vmid; \
+	  echo "Captured VMID=$$vmid"'
+
+l1-manifest: ## Fetch VM config and save raw JSON (no jq)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
 	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
-	  cd packer/arch; \
-	  packer build .'
-
-l1-manifest: ## Emit artifacts/images/<template>.json by querying Proxmox
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
-	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
-	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
+	  : "$${PVE_NODE:?Missing PVE_NODE}"; \
 	  mkdir -p artifacts/images; \
+	  [ -f artifacts/l1_vmid ] || { echo "artifacts/l1_vmid not found. Run make l1-build first."; exit 1; }; \
+	  vmid="$$(cat artifacts/l1_vmid)"; \
 	  AUTH="Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}"; \
 	  HOST="$${PVE_ACCESS_HOST%/}/api2/json"; \
-	  TNAME="$${TEMPLATE_NAME:-$${TEMPLATE_PREFIX:-arch-}$$(date +%Y%m%d)}"; \
-	  echo ">> Resolving template: $$TNAME"; \
-	  vmline="$$(curl -fsS -H "$$AUTH" "$$HOST/cluster/resources?type=vm" \
-	    | jq -r --arg n "$$TNAME" ".data[] | select(.template==1 and .name==\$$n) | \"\(.vmid) \(.node)\"")"; \
-	  [ -n "$$vmline" ] || { echo "Template $$TNAME not found"; exit 1; }; \
-	  vmid="$${vmline%% *}"; node="$${vmline##* }"; \
-	  cfg="$$(curl -fsS -H "$$AUTH" "$$HOST/nodes/$$node/qemu/$$vmid/config" | jq -r ".data")"; \
-	  jq -n --arg name "$$TNAME" --arg node "$$node" --arg vmid "$$vmid" --argjson config "$$cfg" \
-	    "{name:\$$name,node:\$$node,vmid:(\$$vmid|tonumber),config:\$$config,created_at:(now|todate)}" \
-	    > "artifacts/images/$${TNAME}.json"; \
-	  echo "Manifest: artifacts/images/$${TNAME}.json"'
+	  out="artifacts/images/qemu-$${vmid}-config.json"; \
+	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$out"; \
+	  curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" -o "$$out"; \
+	  echo "Wrote $$out"'
 
 l1-clean: ## Remove L1 outputs and manifests
-	@bash -lc 'set -euo pipefail; rm -rf packer/arch/outputs artifacts/images/*'
+	@$(RUN) bash -lc "set -euo pipefail; rm -rf packer/arch/artifacts artifacts/images/* artifacts/l1_vmid artifacts/l1_packer*.log"
 
 # One-shot: run all L1 steps
 l1: l1-init l1-validate l1-build l1-manifest ## Run full L1 locally
