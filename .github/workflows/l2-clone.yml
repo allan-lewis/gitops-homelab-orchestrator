@@ -5,7 +5,7 @@ on:
     inputs:
       l1_run_id:
         description: "Optional: L1 run id to fetch artifacts from"
-        required: false
+        required: true
         type: string
       artifact_name:
         description: "Artifact name from L1"
