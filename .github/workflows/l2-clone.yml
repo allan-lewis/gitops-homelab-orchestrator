@@ -111,7 +111,7 @@ jobs:
           echo "Downloaded artifact: ${{ steps.listart.outputs.artifact_name }} from run ${{ steps.runid.outputs.run_id }}"
           ls -lahR l1_artifacts || true
 
-      - name: Locate qemu config json
+      - name: Locate manifest json
         id: locate
         shell: bash
         run: |

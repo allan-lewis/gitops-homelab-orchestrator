@@ -133,6 +133,7 @@ l2-plan:
 	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
 	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
 	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  export TF_VAR_l1_manifest_json="$$(jq -c '.' artifacts/l1_images/manifest.json)"; \
 	  terraform -chdir=terraform/l2 plan'
 
 l2-apply:
@@ -141,6 +142,7 @@ l2-apply:
 	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
 	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
 	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  export TF_VAR_l1_manifest_json="$$(jq -c '.' artifacts/l1_images/manifest.json)"; \
 	  terraform -chdir=terraform/l2 apply -auto-approve'
 
 l2-destroy:
@@ -149,6 +151,7 @@ l2-destroy:
 	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
 	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
 	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  export TF_VAR_l1_manifest_json="$$(jq -c '.' artifacts/l1_images/manifest.json)"; \
 	  terraform -chdir=terraform/l2 destroy -auto-approve'
 
 l2-inventory:

@@ -1,10 +1,6 @@
 # TLS verification (you have a valid cert)
 pm_tls_insecure = false
 
-# Path to the L1 manifest JSON (relative to terraform/l2/)
-# Make sure this file includes a VMID (flat or under .data.vmid)
-l1_manifest_path = "../../artifacts/l1_images/qemu-102-config.json"
-
 # Cloud-init defaults
 ci_user = "lab"
 

@@ -21,13 +21,6 @@ variable "pm_tls_insecure" {
   default     = false
 }
 
-# --- L1 manifest path ---
-
-variable "l1_manifest_path" {
-  description = "Path to L1 manifest JSON produced by image build"
-  type        = string
-}
-
 # --- VM defaults ---
 
 variable "storage" {
@@ -63,6 +56,15 @@ variable "ci_user" {
 variable "proxmox_vm_public_key" {
   description = "Public SSH key injected from environment (TF_VAR_PROXMOX_VM_PUBLIC_KEY)"
   type        = string
+}
+
+variable "l1_manifest_json" {
+  type        = string
+  description = "JSON string of the L1 template manifest (flat + config). Passed via TF_VAR_l1_manifest_json."
+  validation {
+    condition     = can(jsondecode(var.l1_manifest_json))
+    error_message = "l1_manifest_json must be valid JSON."
+  }
 }
 
 # --- VM definitions (drives for_each in module) ---
