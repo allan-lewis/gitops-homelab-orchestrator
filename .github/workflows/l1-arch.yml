@@ -21,16 +21,13 @@ concurrency:
 
 jobs:
   l1:
-    # Only run if:
-    # - manual dispatch, OR
-    # - triggered by L0 and L0 concluded 'success'
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     environment: lab
     timeout-minutes: 60
 
     env:
-      # Proxmox access (from GitHub Environment 'lab')
+      # Proxmox access
       PVE_ACCESS_HOST:   ${{ secrets.PVE_ACCESS_HOST }}
       PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
       PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
@@ -39,10 +36,14 @@ jobs:
       PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
       PVE_BRIDGE:        ${{ secrets.PVE_BRIDGE }}
 
-      # Optional knobs you already use in L1/Makefile
+      # Build configuration
       TEMPLATE_PREFIX:    ${{ vars.TEMPLATE_PREFIX    || 'arch-' }}
       TEMPLATE_RETENTION: ${{ vars.TEMPLATE_RETENTION || '3' }}
       BUILD_NAME_SUFFIX:  ${{ inputs.build_name }}
+
+      # Disable Doppler in CI
+      CI: "true"
+      DOPPLER: "0"
 
     steps:
       - name: Checkout
@@ -51,40 +52,33 @@ jobs:
       - name: Setup Packer
         uses: hashicorp/setup-packer@v3
 
-      - name: Install Ansible (if your Makefile/playbooks are used in L1)
+      - name: Install Ansible
         run: |
           set -euo pipefail
           sudo apt-get update -y
           sudo apt-get install -y ansible jq
 
-      # Build the template using your existing target(s)
+      # Initialize packer plugins/templates
+      - name: L1 init
+        run: |
+          set -euo pipefail
+          make l1-init RUN=
+
+      # Build the template
       - name: L1 build (Packer -> Proxmox template)
         run: |
           set -euo pipefail
-          make l1-build
+          make l1-build RUN=
 
-      # Generate the manifest from qm (your existing target)
+      # Emit manifest from qm
       - name: L1 manifest
         run: |
           set -euo pipefail
-          make l1-manifest
+          make l1-manifest RUN=
 
-      # Upload only if something exists under artifacts/l1_images
+      # Upload results if present
       - name: Upload L1 artifacts (if present)
         if: ${{ hashFiles('artifacts/l1_images/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: l1-template-artifacts
-          path: artifacts/l1_images
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Summarize
-        if: always()
-        run: |
-          echo "### L1 Template Build completed" >> $GITHUB_STEP_SUMMARY
-          echo "- Triggered by: \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event_name }}" = "workflow_run" ]; then
-            echo "- L0 conclusion: \`${{ github.event.workflow_run.conclusion }}\`" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- Artifacts (if any): \`artifacts/l1_images\`" >> $GITHUB_STEP_SUMMARY
