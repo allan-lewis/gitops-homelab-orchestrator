@@ -76,9 +76,9 @@ jobs:
           set -euo pipefail
           make l1-manifest RUN=
 
-      # Upload results if present
-      - name: Upload L1 artifacts (if present)
-        if: ${{ hashFiles('artifacts/l1_images/**') != '' }}
+      - name: Upload L1 artifacts
         uses: actions/upload-artifact@v4
         with:
           name: l1-template-artifacts
+          path: artifacts/l1_images
+          retention-days: 14
