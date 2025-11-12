@@ -2,8 +2,30 @@ SHELL := /bin/bash
 .ONESHELL:
 .DEFAULT_GOAL := help
 
-# Wrap every command (default uses Doppler). Override with: RUN=
+## Secrets runner wrapper
+## - Default: use Doppler locally.
+## - In CI (GitHub Actions), default to **no Doppler**.
+## - You can still override explicitly:
+##     make l1-build RUN=
+##     make l1-build DOPPLER=0
+##     make l1-build FORCE_DOPPLER=1
+
+# Local default
 RUN ?= doppler run --
+
+# Auto-disable in CI unless explicitly forced
+ifeq ($(CI),true)
+  ifneq ($(FORCE_DOPPLER),1)
+    override RUN :=
+  endif
+endif
+
+# Manual kill switch (works anywhere): DOPPLER=0
+ifeq ($(DOPPLER),0)
+  override RUN :=
+endif
+
+export RUN
 
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 
