@@ -17,8 +17,8 @@ on:
     types: [completed]
 
 permissions:
-  contents: read
   actions: read
+  contents: read
 
 concurrency:
   group: l2-step1-${{ github.ref }}
@@ -47,12 +47,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 1) Figure out which L1 run to read from (same as you already do)
       - name: Determine L1 run id
         id: runid
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.l1_run_id }}" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.l1_run_id || '' }}" ]]; then
             echo "run_id=${{ inputs.l1_run_id }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
@@ -61,17 +62,53 @@ jobs:
             exit 1
           fi
 
+      # 2) List artifacts on that run so we know the exact names (super useful for debugging)
+      - name: List artifacts on L1 run
+        id: listart
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run_id = Number(`${{ steps.runid.outputs.run_id }}`);
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id
+            });
+            core.info(`Found ${data.artifacts.length} artifact(s):`);
+            for (const a of data.artifacts) {
+              core.info(`- ${a.name} (id=${a.id}) expired=${a.expired} size=${a.size_in_bytes}`);
+            }
+            // try to find your expected default first, but also fall back to any name that starts with l1-
+            const preferred = data.artifacts.find(a => a.name === 'l1-template-artifacts' && !a.expired);
+            const fallback  = data.artifacts.find(a => a.name.startsWith('l1-') && !a.expired);
+            const chosen = preferred || fallback || null;
+            core.setOutput('found', chosen ? 'true' : 'false');
+            core.setOutput('artifact_name', chosen ? chosen.name : '');
+            core.setOutput('count', String(data.artifacts.length));
+
+      # 3) Fail fast if nothing usable was found, and show the names we saw
+      - name: Guard: ensure an artifact exists
+        if: ${{ steps.listart.outputs.found != 'true' }}
+        run: |
+          echo "No usable artifact found on L1 run ${{ steps.runid.outputs.run_id }}."
+          echo "Check the step above ('List artifacts on L1 run') for available names and expiration."
+          exit 1
+
+      # 4) Download the chosen artifact by name for that run-id
       - name: Download L1 artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: l1_artifacts
+          name: ${{ steps.listart.outputs.artifact_name }}
           run-id: ${{ steps.runid.outputs.run_id }}
+          repository: ${{ github.repository }}
+          path: l1_artifacts
+          # Explicit token helps in some org/repo permission setups
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # (Optional) Show what we actually got
       - name: List downloaded files
         run: |
-          set -euo pipefail
-          echo "Downloaded from run ${{ steps.runid.outputs.run_id }}"
+          echo "Downloaded artifact: ${{ steps.listart.outputs.artifact_name }} from run ${{ steps.runid.outputs.run_id }}"
           ls -lahR l1_artifacts || true
 
       - name: Locate qemu config json
