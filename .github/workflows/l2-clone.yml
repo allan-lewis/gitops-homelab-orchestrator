@@ -116,9 +116,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          file="$(find l1_artifacts -type f -name 'qemu-*-config.json' | head -n1 || true)"
+          file="$(find l1_artifacts -type f -name 'manifest.json' | head -n1 || true)"
           if [[ -z "${file}" ]]; then
-            echo "No qemu-*-config.json found in artifact '${{ env.ARTIFACT_NAME }}' from run ${{ steps.runid.outputs.run_id }}" >&2
+            echo "No manifest.json found in artifact '${{ env.ARTIFACT_NAME }}' from run ${{ steps.runid.outputs.run_id }}" >&2
             exit 1
           fi
           echo "Found manifest: ${file}"

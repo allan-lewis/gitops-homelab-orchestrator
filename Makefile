@@ -92,25 +92,26 @@ l1-build: ## Build the Arch template (Packer -> Proxmox) and capture VMID from p
 	  printf "%s\n" "$$vmid" > artifacts/l1_vmid; \
 	  echo "Captured VMID=$$vmid"'
 
-l1-manifest: ## Fetch VM config and save pretty JSON
+l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
 	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
 	  : "$${PVE_NODE:?Missing PVE_NODE}"; \
+	  command -v jq >/dev/null 2>&1 || { echo "jq is required for l1-manifest"; exit 1; }; \
 	  mkdir -p artifacts/l1_images; \
 	  [ -f artifacts/l1_vmid ] || { echo "artifacts/l1_vmid not found. Run make l1-build first."; exit 1; }; \
 	  vmid="$$(cat artifacts/l1_vmid)"; \
 	  AUTH="Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}"; \
 	  HOST="$${PVE_ACCESS_HOST%/}/api2/json"; \
-	  out="artifacts/l1_images/qemu-$${vmid}-config.json"; \
-	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$out"; \
-	  if command -v jq >/dev/null 2>&1; then \
-	    curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" | jq -S . > "$$out"; \
-	  else \
-	    curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config" > "$$out"; \
-	  fi; \
-	  echo "Wrote $$out"'
+	  raw_out="artifacts/l1_images/qemu-$${vmid}-config.json"; \
+	  norm_out="artifacts/l1_images/manifest.json"; \
+	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$raw_out and $$norm_out"; \
+	  resp="$$(curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config")"; \
+	  echo "$$resp" | jq -S . > "$$raw_out"; \
+	  echo "$$resp" | jq -S --arg vmid "$$vmid" --arg node "$${PVE_NODE}" "{vmid:(\$$vmid|tonumber), node:\$$node} + .data" > "$$norm_out"; \
+	  echo "Wrote $$raw_out"; \
+	  echo "Wrote $$norm_out"'
 
 l1-clean: ## Remove L1 outputs and manifests
 	@$(RUN) bash -lc "set -euo pipefail; rm -rf packer/arch/artifacts artifacts/l1* artifacts/l1_images artifacts/packer-manifest.json"
