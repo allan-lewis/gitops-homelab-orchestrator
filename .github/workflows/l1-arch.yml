@@ -1,125 +1,90 @@
-name: L1 - Arch template build
+name: L1 Template Build
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "packer/arch/**"
-      - ".github/workflows/l1-arch.yml"
+    inputs:
+      build_name:
+        description: "Optional: override template/build name suffix"
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["L0 Proxmox Runway"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: l1-template-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  l1:
+    # Only run if:
+    # - manual dispatch, OR
+    # - triggered by L0 and L0 concluded 'success'
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     environment: lab
+    timeout-minutes: 60
+
     env:
-      # Required Proxmox access secrets
-      PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}   # e.g. https://polaris.example.com:8006  (NO /api2/json)
-      PM_TOKEN_ID:     ${{ secrets.PM_TOKEN_ID }}       # e.g. gitops@pve!gitops
-      PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-      PVE_NODE: ${{ secrets.PVE_NODE }}
+      # Proxmox access (from GitHub Environment 'lab')
+      PVE_ACCESS_HOST:   ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE:          ${{ secrets.PVE_NODE }}
+      PVE_STORAGE_ISO:   ${{ secrets.PVE_STORAGE_ISO }}
+      PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
+      PVE_BRIDGE:        ${{ secrets.PVE_BRIDGE }}
+
+      # Optional knobs you already use in L1/Makefile
+      TEMPLATE_PREFIX:    ${{ vars.TEMPLATE_PREFIX    || 'arch-' }}
+      TEMPLATE_RETENTION: ${{ vars.TEMPLATE_RETENTION || '3' }}
+      BUILD_NAME_SUFFIX:  ${{ inputs.build_name }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install prerequisites (jq, curl)
-        shell: bash
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v3
+
+      - name: Install Ansible (if your Makefile/playbooks are used in L1)
         run: |
+          set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y jq curl
+          sudo apt-get install -y ansible jq
 
-      - uses: hashicorp/setup-packer@v2
-        with:
-          version: latest
-
-      # Ensure the Packer manifest target directory exists BEFORE build
-      - name: Ensure packer manifest directory exists
-        working-directory: packer/arch
-        shell: bash
-        run: mkdir -p artifacts
-
-      - name: Packer init/validate/build
-        working-directory: packer/arch
-        shell: bash
+      # Build the template using your existing target(s)
+      - name: L1 build (Packer -> Proxmox template)
         run: |
           set -euo pipefail
-          packer init .
-          packer validate .
-          packer build .
+          make l1-build
 
-      - name: Ensure output artifacts directory exists
-        shell: bash
-        run: mkdir -p artifacts/images
-
-      - name: Emit template manifest from VMID (deterministic)
-        id: manifest
-        shell: bash
-        env:
-          API_BASE: ${{ env.PVE_ACCESS_HOST }}/api2/json
+      # Generate the manifest from qm (your existing target)
+      - name: L1 manifest
         run: |
           set -euo pipefail
+          make l1-manifest
 
-          MANIFEST_PATH="packer/arch/artifacts/packer-manifest.json"
-          [[ -f "$MANIFEST_PATH" ]] || { echo "ERROR: Missing $MANIFEST_PATH (did the manifest post-processor run?)"; exit 1; }
-
-          artifact_id="$(jq -r '.builds[-1].artifact_id' "$MANIFEST_PATH")"
-          [[ -n "$artifact_id" && "$artifact_id" != "null" ]] || { echo "ERROR: artifact_id missing in manifest"; exit 1; }
-
-          AUTH_HEADER="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
-
-          node="" ; vmid="" ; name=""
-
-          if [[ "$artifact_id" =~ ^[^/]+/[0-9]+$ ]]; then
-            # Format "<node>/<vmid>"
-            node="${artifact_id%%/*}"
-            vmid="${artifact_id##*/}"
-            # Try to get a human name (not required)
-            name="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
-              | jq -r --arg id "$vmid" --arg n "$node" \
-                  '.data[] | select((.vmid|tostring)==$id and .node==$n) | .name' | head -n1)"
-          elif [[ "$artifact_id" =~ ^[0-9]+$ ]]; then
-            # Format "<vmid>" only — resolve node deterministically (no template filter here)
-            vmid="$artifact_id"
-            match="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm" \
-              | jq -c --arg id "$vmid" '[.data[] | select((.vmid|tostring)==$id)]')"
-            count="$(jq -r 'length' <<<"$match")"
-            if [[ "$count" -ne 1 ]]; then
-              echo "ERROR: Expected exactly 1 VM with vmid=$vmid, found $count"; jq . <<<"$match"; exit 1
-            fi
-            node="$(jq -r '.[0].node' <<<"$match")"
-            name="$(jq -r '.[0].name' <<<"$match")"
-          else
-            echo "ERROR: Unexpected artifact_id format: '$artifact_id' (expected '<node>/<vmid>' or '<vmid>')" >&2
-            exit 1
-          fi
-
-          # Fetch config and validate it's a TEMPLATE
-          cfg_json="$(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/nodes/${node}/qemu/${vmid}/config" | jq -er '.data')"
-          is_template="$(jq -r '.template // 0' <<<"$cfg_json")"
-          if [[ "$is_template" != "1" ]]; then
-            echo "ERROR: VMID ${vmid} on node ${node} is not a template according to /config (template: ${is_template})"
-            exit 1
-          fi
-
-          # If name was empty, derive one (fallback)
-          if [[ -z "${name}" || "${name}" == "null" ]]; then
-            name="$(jq -r --arg id "$vmid" --arg n "$node" '.data[] | select((.vmid|tostring)==$id and .node==$n) | .name' \
-                    <(curl -ksS -H "$AUTH_HEADER" "${API_BASE}/cluster/resources?type=vm") | head -n1)"
-            [[ -n "$name" && "$name" != "null" ]] || name="vm-${vmid}"
-          fi
-
-          mkdir -p artifacts/images
-          out="artifacts/images/${name}.json"
-          jq -n --arg name "$name" \
-                --arg node "$node" \
-                --arg vmid "$vmid" \
-                --argjson cfg "$cfg_json" \
-                '{name:$name, node:$node, vmid:($vmid|tonumber), config:$cfg, created_at:(now|todate)}' \
-            > "$out"
-
-          echo "manifest=${out}" >> "$GITHUB_OUTPUT"
-          echo "Wrote $out"
-
-      - uses: actions/upload-artifact@v4
+      # Upload only if something exists under artifacts/l1_images
+      - name: Upload L1 artifacts (if present)
+        if: ${{ hashFiles('artifacts/l1_images/**') != '' }}
+        uses: actions/upload-artifact@v4
         with:
-          name: l1-arch-manifest
-          path: ${{ steps.manifest.outputs.manifest }}
+          name: l1-template-artifacts
+          path: artifacts/l1_images
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Summarize
+        if: always()
+        run: |
+          echo "### L1 Template Build completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "- L0 conclusion: \`${{ github.event.workflow_run.conclusion }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- Artifacts (if any): \`artifacts/l1_images\`" >> $GITHUB_STEP_SUMMARY
