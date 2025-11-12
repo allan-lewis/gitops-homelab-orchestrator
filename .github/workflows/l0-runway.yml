@@ -2,13 +2,9 @@ name: L0 Proxmox Runway
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - '.github/workflows/l0-runway.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/l0-runway.yml'
+
+permissions:
+  contents: read
 
 concurrency:
   group: l0-runway-${{ github.ref }}
@@ -30,8 +26,8 @@ jobs:
       PVE_BRIDGE: ${{ secrets.PVE_BRIDGE }}
       L0_MIN_FREE_GIB_ISO: ${{ vars.L0_MIN_FREE_GIB_ISO || '4' }}
       L0_MIN_FREE_PCT_VM:  ${{ vars.L0_MIN_FREE_PCT_VM  || '10' }}
-      TEMPLATE_PREFIX:   ${{ vars.TEMPLATE_PREFIX   || 'arch-' }}
-      TEMPLATE_RETENTION: ${{ vars.TEMPLATE_RETENTION || '3' }}
+      TEMPLATE_PREFIX:      ${{ vars.TEMPLATE_PREFIX      || 'arch-' }}
+      TEMPLATE_RETENTION:   ${{ vars.TEMPLATE_RETENTION   || '3' }}
 
     steps:
       - name: Checkout
@@ -48,9 +44,11 @@ jobs:
           set -euo pipefail
           ansible-playbook ansible/playbooks/l0_runway.yml
 
-      - name: Upload L0 artifacts
+      - name: Upload L0 artifacts (if present)
+        if: ${{ hashFiles('artifacts/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: l0-runway-artifacts
           path: artifacts
-          if-no-files-found: error
+          if-no-files-found: ignore
+          retention-days: 14

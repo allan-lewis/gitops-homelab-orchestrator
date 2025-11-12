@@ -49,6 +49,9 @@ l0-clean: ## Remove L1 artifacts
 
 # --- L1 (Image Build) ---------------------------------------------------------
 
+l1-fmt: ## Packer format for L1 (Arch)
+	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer fmt ."
+
 l1-init: ## Packer init for L1 (Arch)
 	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer init ."
 
@@ -126,4 +129,11 @@ l2-destroy:
 	  terraform -chdir=terraform/l2 destroy -auto-approve'
 
 l2-inventory:
-	@ls -1 artifacts/l2_inventory 2>/dev/null || true
+	@echo "📦 L2 inventory:"
+	@ls -lh artifacts/l2_inventory 2>/dev/null || echo "No inventory files yet"
+	@echo ""
+	@jq . artifacts/l2_inventory/inventory.json 2>/dev/null || echo "No JSON inventory yet"
+
+l2-clean:
+	@rm -rf artifacts/l2_inventory
+	@echo "🧹 Removed generated L2 inventory artifacts."
