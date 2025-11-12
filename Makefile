@@ -13,9 +13,6 @@ include .env
 export
 endif
 
-.PHONY: help clean l0-smoke l0-build l0-clean \
-        l1 l1-init l1-validate l1-build l1-manifest l1-clean
-
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
@@ -41,6 +38,7 @@ l0-smoke: ## Call /api2/json/version with Proxmox token and save pretty artifact
 
 l0-build: ## Run the L0 runway locally (via Ansible), with Doppler env
 	@$(RUN) bash -lc "set -euo pipefail; \
+	  mkdir -p artifacts; \
 	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
 	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
 	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
@@ -50,10 +48,6 @@ l0-clean: ## Remove L1 artifacts
 	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts/l0_smoke_version.json"
 
 # --- L1 (Image Build) ---------------------------------------------------------
-# Required env at runtime:
-#   PVE_ACCESS_HOST   PM_TOKEN_ID   PM_TOKEN_SECRET
-# Optional (but recommended):
-#   TEMPLATE_NAME  TEMPLATE_PREFIX  PVE_NODE  PVE_BRIDGE  PVE_STORAGE_VM  ARCH_ISO_FILE
 
 l1-init: ## Packer init for L1 (Arch)
 	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer init ."
@@ -95,3 +89,26 @@ l1-manifest: ## Fetch VM config and save pretty JSON
 
 l1-clean: ## Remove L1 outputs and manifests
 	@$(RUN) bash -lc "set -euo pipefail; rm -rf packer/arch/artifacts artifacts/l1* artifacts/l1_images artifacts/packer-manifest.json"
+
+# --- L2 (VM Creation) ---------------------------------------------------------
+
+l2-fmt:
+	@$(RUN) bash -lc 'terraform -chdir=terraform/l2 fmt'
+
+l2-init:
+	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 init -upgrade'
+
+l2-validate:
+	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 validate'
+
+l2-plan:
+	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 plan'
+
+l2-apply:
+	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 apply -auto-approve'
+
+l2-destroy:
+	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 destroy -auto-approve'
+
+l2-inventory:
+	@ls -1 artifacts/l2_inventory 2>/dev/null || true
