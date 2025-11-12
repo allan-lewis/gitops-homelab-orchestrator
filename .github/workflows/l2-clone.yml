@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       l1_run_id:
-        description: "Optional: L1 run id to fetch artifacts from"
+        description: "L1 run id to fetch artifacts from"
         required: true
         type: string
       artifact_name:
