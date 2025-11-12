@@ -1,0 +1,141 @@
+name: L2 Clone & Inventory
+
+on:
+  workflow_dispatch:
+    inputs:
+      l1_run_id:
+        description: "Optional: L1 run id to fetch artifacts from"
+        required: false
+        type: string
+      artifact_name:
+        description: "Artifact name from L1"
+        required: false
+        default: "l1-template-artifacts"
+        type: string
+  workflow_run:
+    workflows: ["L1 Template Build"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: l2-step1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetch_and_validate:
+    # Only run if:
+    # - manual dispatch, OR
+    # - triggered by L1 AND L1 concluded 'success'
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    environment: lab
+    timeout-minutes: 20
+
+    env:
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'l1-template-artifacts' }}
+
+    outputs:
+      template_vmid: ${{ steps.parse.outputs.template_vmid }}
+      template_node: ${{ steps.parse.outputs.template_node }}
+      template_name: ${{ steps.parse.outputs.template_name }}
+      manifest_path: ${{ steps.locate.outputs.manifest_path }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine L1 run id
+        id: runid
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.l1_run_id }}" ]]; then
+            echo "run_id=${{ inputs.l1_run_id }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No L1 run id available. Provide 'l1_run_id' when running manually." >&2
+            exit 1
+          fi
+
+      - name: Download L1 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: l1_artifacts
+          run-id: ${{ steps.runid.outputs.run_id }}
+
+      - name: List downloaded files
+        run: |
+          set -euo pipefail
+          echo "Downloaded from run ${{ steps.runid.outputs.run_id }}"
+          ls -lahR l1_artifacts || true
+
+      - name: Locate qemu config json
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="$(find l1_artifacts -type f -name 'qemu-*-config.json' | head -n1 || true)"
+          if [[ -z "${file}" ]]; then
+            echo "No qemu-*-config.json found in artifact '${{ env.ARTIFACT_NAME }}' from run ${{ steps.runid.outputs.run_id }}" >&2
+            exit 1
+          fi
+          echo "Found manifest: ${file}"
+          echo "manifest_path=${file}" >> "$GITHUB_OUTPUT"
+
+      - name: Install jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      - name: Validate required fields
+        id: validate
+        shell: bash
+        run: |
+          set -euo pipefail
+          f="${{ steps.locate.outputs.manifest_path }}"
+          # Assert required keys exist and have sane values.
+          jq -e '
+            has("name") and
+            has("vmid") and
+            has("node") and
+            has("ostype") and
+            has("memory") and
+            has("scsi0") and
+            has("agent") and
+            has("template") and
+            (.template == 1)
+          ' "$f" >/dev/null
+
+          echo "Validation OK."
+
+      - name: Parse fields for downstream steps
+        id: parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          f="${{ steps.locate.outputs.manifest_path }}"
+          name="$(jq -r '.name' "$f")"
+          vmid="$(jq -r '.vmid' "$f")"
+          node="$(jq -r '.node' "$f")"
+
+          echo "template_name=${name}" >> "$GITHUB_OUTPUT"
+          echo "template_vmid=${vmid}" >> "$GITHUB_OUTPUT"
+          echo "template_node=${node}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize
+        if: always()
+        shell: bash
+        run: |
+          echo "### L2 Step 1: Fetch & Validate" >> $GITHUB_STEP_SUMMARY
+          echo "- Source L1 run: \`${{ steps.runid.outputs.run_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: \`${{ env.ARTIFACT_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Manifest: \`${{ steps.locate.outputs.manifest_path }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Template name: \`${{ steps.parse.outputs.template_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Template VMID: \`${{ steps.parse.outputs.template_vmid }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Template node: \`${{ steps.parse.outputs.template_node }}\`" >> $GITHUB_STEP_SUMMARY
