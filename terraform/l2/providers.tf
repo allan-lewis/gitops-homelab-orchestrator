@@ -2,19 +2,21 @@ terraform {
   required_version = ">= 1.6.0"
   required_providers {
     proxmox = {
-      source  = "Telmate/proxmox"
-      version = "~> 2.9.11"
-    }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
+      source  = "bpg/proxmox"
+      version = ">= 0.53.1"
     }
   }
 }
 
+# Build the full API endpoint from your host (env via TF_VAR_pve_access_host)
+locals {
+  pve_api_url = "${chomp(var.pve_access_host)}/api2/json"
+}
+
+# bpg/proxmox provider
+# api_token must be "<TOKEN_ID>=<TOKEN_SECRET>"
 provider "proxmox" {
-  pm_api_url          = local.pm_api_url
-  pm_api_token_id     = var.pm_token_id
-  pm_api_token_secret = var.pm_token_secret
-  pm_tls_insecure     = var.pm_tls_insecure
+  endpoint  = local.pve_api_url
+  api_token = "${var.pm_token_id}=${var.pm_token_secret}"
+  insecure  = var.pm_tls_insecure
 }

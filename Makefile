@@ -102,13 +102,28 @@ l2-validate:
 	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 validate'
 
 l2-plan:
-	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 plan'
+	@$(RUN) bash -lc '\
+	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; \
+	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
+	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
+	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  terraform -chdir=terraform/l2 plan'
 
 l2-apply:
-	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 apply -auto-approve'
+	@$(RUN) bash -lc '\
+	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; \
+	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
+	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
+	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  terraform -chdir=terraform/l2 apply -auto-approve'
 
 l2-destroy:
-	@$(RUN) bash -lc 'export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; terraform -chdir=terraform/l2 destroy -auto-approve'
+	@$(RUN) bash -lc '\
+	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; \
+	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
+	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
+	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
+	  terraform -chdir=terraform/l2 destroy -auto-approve'
 
 l2-inventory:
 	@ls -1 artifacts/l2_inventory 2>/dev/null || true

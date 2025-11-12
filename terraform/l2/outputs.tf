@@ -1,9 +1,14 @@
-# Per-VM IPs (derived from the static ipconfig0 you provide)
-output "arch_vm_ips" {
-  value = { for k, m in module.arch : k => m.ip }
+# Collect all VM IDs
+output "arch_vm_vmids" {
+  description = "VMIDs of created Arch VMs"
+  value       = { for k, m in module.arch : k => m.vm_id }
 }
 
-# Per-VM VMIDs
-output "arch_vm_vmids" {
-  value = { for k, m in module.arch : k => m.vmid }
+# Collect assigned IPv4 addresses (from initialization)
+output "arch_vm_ips" {
+  description = "Static IPv4 addresses of created Arch VMs"
+  value = {
+    for k, m in module.arch :
+    k => try(m.initialization[0].ip_config[0].ipv4[0].address, "")
+  }
 }

@@ -1,53 +1,69 @@
 variable "name" {
-  type = string
+  description = "VM hostname/name"
+  type        = string
 }
 
 variable "node" {
-  type = string
+  description = "Proxmox node name (e.g., polaris)"
+  type        = string
 }
 
-variable "clone" {
-  type = string
+variable "clone_vmid" {
+  description = "Template VMID to clone (from L1)"
+  type        = number
 }
 
 variable "cores" {
-  type = number
+  description = "vCPU cores"
+  type        = number
 }
 
 variable "memory_mb" {
-  type = number
+  description = "Memory in MiB"
+  type        = number
 }
 
 variable "disk_gb" {
-  type = number
-}
-
-variable "bridge" {
-  type = string
+  description = "Boot disk size in GiB"
+  type        = number
 }
 
 variable "storage" {
-  type = string
+  description = "Datastore/storage ID for the boot disk"
+  type        = string
 }
 
 variable "scsihw" {
-  type    = string
-  default = "virtio-scsi-pci"
+  description = "SCSI controller model (e.g., virtio-scsi-pci)"
+  type        = string
+  default     = "virtio-scsi-pci"
 }
 
-variable "ipconfig0" {
-  type = string
+variable "bridge" {
+  description = "Bridge to attach NIC to (e.g., vmbr0)"
+  type        = string
+  default     = "vmbr0"
 }
 
 variable "tags" {
-  type    = list(string)
-  default = []
+  description = "List of Proxmox tags"
+  type        = list(string)
+  default     = []
+}
+
+variable "ipconfig0" {
+  description = "Static IP/gateway in cloud-init style: ip=10.0.0.21/24,gw=10.0.0.1"
+  type        = string
 }
 
 variable "ci_user" {
-  type = string
+  description = "Default SSH user for cloud-init"
+  type        = string
+  default     = "lab"
 }
 
 variable "ssh_authorized_keys" {
-  type = list(string)
+  description = "SSH public keys for the default user"
+  type        = list(string)
+  default     = []
 }

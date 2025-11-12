@@ -1,25 +1,20 @@
-# terraform/l2/terraform.tfvars
-# Proxmox credentials/host are provided via env:
-#   export PVE_ACCESS_HOST="https://proxmox.allanshomelab.com"
-#   export PM_TOKEN_ID="gitops@pve!gitops"
-#   export PM_TOKEN_SECRET="***"
-#   export TF_VAR_pve_access_host="$PVE_ACCESS_HOST"
-#   export TF_VAR_pm_token_id="$PM_TOKEN_ID"
-#   export TF_VAR_pm_token_secret="$PM_TOKEN_SECRET"
-
-# Optional (set to false since you have a valid cert)
+# TLS verification (you have a valid cert)
 pm_tls_insecure = false
 
-# Reference the latest L1 manifest produced by Packer
+# Path to the L1 manifest JSON (relative to terraform/l2/)
+# Make sure this file includes a VMID (flat or under .data.vmid)
 l1_manifest_path = "../../artifacts/l1_images/qemu-102-config.json"
 
-# Cloud-init defaults (Arch)
+# Cloud-init defaults
 ci_user = "lab"
-ssh_authorized_keys = [
-  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIClabHomelabKeyExample== lab@polaris",
-]
 
-# Arch VMs with REQUIRED static IPs (ip=.../gw=...)
+# Proxmox defaults (override per-VM in vms if needed)
+storage = "local-lvm"
+scsihw  = "virtio-scsi-pci"
+bridge  = "vmbr0"
+
+# Arch VMs (STATIC IPs required via ipconfig0)
+# ipconfig0 must be like: "ip=10.0.0.21/24,gw=10.0.0.1"
 vms = {
   archie = {
     node      = "polaris"

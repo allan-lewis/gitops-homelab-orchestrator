@@ -1,10 +1,14 @@
-# VMID from the created QEMU VM
-output "vmid" {
-  value = proxmox_vm_qemu.vm.vmid
+# VMID (numeric ID assigned by Proxmox)
+output "vm_id" {
+  description = "Proxmox VM ID of the created virtual machine"
+  value       = proxmox_virtual_environment_vm.vm.id
 }
 
-# Extract static IP from ipconfig0 (e.g., "ip=10.0.0.21/24,gw=10.0.0.1")
-# Returns empty string if it doesn't match.
-output "ip" {
-  value = try(regex("ip=([^/]+)/", var.ipconfig0), "")
+# IPv4 address (if available)
+output "ip_address" {
+  description = "Static IPv4 address assigned via cloud-init"
+  value = try(
+    proxmox_virtual_environment_vm.vm.initialization[0].ip_config[0].ipv4[0].address,
+    ""
+  )
 }

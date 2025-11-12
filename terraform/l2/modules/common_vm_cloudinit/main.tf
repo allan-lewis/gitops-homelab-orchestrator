@@ -1,53 +1,75 @@
-terraform {
-  required_providers {
-    proxmox = {
-      source = "Telmate/proxmox"
-    }
-  }
+locals {
+  # Parse "ip=10.0.0.21/24,gw=10.0.0.1" into a small map
+  _kv_pairs     = [for kv in split(",", var.ipconfig0) : split("=", kv)]
+  _kv_map       = { for p in local._kv_pairs : p[0] => p[1] if length(p) == 2 }
+  ipv4_address  = try(local._kv_map["ip"], "")
+  ipv4_gateway  = try(local._kv_map["gw"], "")
 }
 
-resource "proxmox_vm_qemu" "vm" {
-  name        = var.name
-  target_node = var.node
-  clone       = var.clone
-  full_clone  = true
+resource "proxmox_virtual_environment_vm" "vm" {
+  # --- Identity / placement ---
+  node_name = var.node
+  name      = var.name
+  tags      = var.tags
 
-  # --- Compute ---
-  cores   = var.cores
-  sockets = 1
-  cpu     = "kvm64"
-  memory  = var.memory_mb
-  kvm     = true
-  agent   = 1
-  onboot  = true
-  numa    = false
-  balloon = 0 
+  # --- Clone from L1 template (bpg needs VMID) ---
+  clone {
+    vm_id = var.clone_vmid
+    full  = true
+  }
+
+  # --- CPU / Memory / Agent ---
+  cpu {
+    cores   = var.cores
+    type    = "kvm64"
+    sockets = 1
+  }
+
+  memory {
+    dedicated = var.memory_mb
+  }
+
+  agent {
+    enabled = true
+  }
+
+  on_boot = true
+  # (no 'numa' attribute here; bpg exposes NUMA differently—omit for now)
 
   # --- Disk ---
-  scsihw = var.scsihw
+  scsi_hardware = var.scsihw
   disk {
-    type    = "scsi"
-    storage = var.storage
-    size    = "${var.disk_gb}G"
-    ssd     = 1
-    discard = "on"
-    cache   = "none"
+    datastore_id = var.storage
+    interface    = "scsi0"
+    size         = var.disk_gb
+    ssd          = true
+    discard      = "on"
+    cache        = "none"
   }
 
   # --- Network ---
-  network {
-    model  = "virtio"
-    bridge = var.bridge
-    tag    = 0           # IMPORTANT: force numeric VLAN tag to avoid provider panic
+  network_device {
+    bridge  = var.bridge
+    model   = "virtio"
+    vlan_id = 0
   }
 
-  # --- Cloud-init (static IPs required) ---
-  ipconfig0 = var.ipconfig0
-  ciuser    = var.ci_user
-  sshkeys   = join("\n", var.ssh_authorized_keys)
+  # --- Cloud-Init (static IPs) ---
+  initialization {
+    user_account {
+      username = var.ci_user
+      keys     = var.ssh_authorized_keys
+    }
 
-  # --- Metadata ---
-  tags = join(",", var.tags)
+    ip_config {
+      ipv4 {
+        address = local.ipv4_address  # e.g. "10.0.0.21/24"
+        gateway = local.ipv4_gateway  # e.g. "10.0.0.1"
+      }
+    }
+  }
 
-  boot = "order=scsi0;net0"
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
