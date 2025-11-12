@@ -87,7 +87,7 @@ jobs:
             core.setOutput('count', String(data.artifacts.length));
 
       # 3) Fail fast if nothing usable was found, and show the names we saw
-      - name: Guard: ensure an artifact exists
+      - name: Ensure an artifact exists
         if: ${{ steps.listart.outputs.found != 'true' }}
         run: |
           echo "No usable artifact found on L1 run ${{ steps.runid.outputs.run_id }}."
