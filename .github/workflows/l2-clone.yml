@@ -1,4 +1,4 @@
-name: L2 Clone & Inventory
+name: L2 Clone and Inventory
 
 on:
   workflow_dispatch:
