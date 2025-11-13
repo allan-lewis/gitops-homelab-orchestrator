@@ -181,6 +181,8 @@ jobs:
             echo "Querying guest agent for $host (vmid=$vmid node=$node)"
             resp="$(curl -fsS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/agent/network-get-interfaces")"
 
+            echo "$resp"
+            
             ip="$(echo "$resp" | jq -r '.data[]?."ip-addresses"[]? | select(.["ip-address-type"]=="ipv4" and .["ip-address"]!="127.0.0.1") | .["ip-address"]' | head -n1)"
             if [[ -z "${ip:-}" || "$ip" == "null" ]]; then
               echo "no valid IPv4 reported by guest agent for $host"
