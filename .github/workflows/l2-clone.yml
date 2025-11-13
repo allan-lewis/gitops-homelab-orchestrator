@@ -36,8 +36,6 @@ jobs:
       PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
       PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
-
-      # If your TF needs a public key variable, keep this. Otherwise you can remove it.
       TF_VAR_PROXMOX_VM_PUBLIC_KEY: ${{ secrets.TF_VAR_PROXMOX_VM_PUBLIC_KEY }}
 
       # Ensure no Doppler in CI
@@ -116,6 +114,7 @@ jobs:
           echo "TF_VAR_pve_access_host=${PVE_ACCESS_HOST}" >> "$GITHUB_ENV"
           echo "TF_VAR_pm_token_id=${PM_TOKEN_ID}" >> "$GITHUB_ENV"
           echo "TF_VAR_pm_token_secret=${PM_TOKEN_SECRET}" >> "$GITHUB_ENV"
+          echo "TF_VAR_proxmox_vm_public_key=${TF_VAR_PROXMOX_VM_PUBLIC_KEY}" >> "$GITHUB_ENV"
 
       - name: Terraform init
         working-directory: terraform/l2
