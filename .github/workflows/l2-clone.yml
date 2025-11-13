@@ -140,20 +140,6 @@ jobs:
           set -euo pipefail
           terraform apply -auto-approve tfplan
 
-      - name: List artifacts folder
-        run: |
-          set -euo pipefail
-          echo "Contents of artifacts folder:"
-          ls -lahR artifacts || true
-
-      - name: Upload L2 artifacts
-        if: ${{ hashFiles('artifacts/**') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: l2-artifacts
-          path: artifacts
-          retention-days: 14
-
       - name: Verify IP via guest agent
         id: ga_check
         shell: bash
@@ -207,3 +193,17 @@ jobs:
 
           echo "Updated inventory:"
           cat artifacts/l2_inventory/inventory.json
+
+      - name: List artifacts folder
+        run: |
+          set -euo pipefail
+          echo "Contents of artifacts folder:"
+          ls -lahR artifacts || true
+
+      - name: Upload L2 artifacts
+        if: ${{ hashFiles('artifacts/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2-artifacts
+          path: artifacts
+          retention-days: 14
