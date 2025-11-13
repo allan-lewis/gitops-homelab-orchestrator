@@ -6,7 +6,6 @@ on:
       l1_run_id:
         description: "L1 workflow run id to fetch artifacts from"
         required: true
-        default: "19316048305"
         type: string
       artifact_name:
         description: "Artifact name produced by L1"

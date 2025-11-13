@@ -163,3 +163,140 @@ l2-inventory:
 l2-clean:
 	@rm -rf artifacts/l2_inventory
 	@echo "🧹 Removed generated L2 inventory artifacts."
+
+# --- L3 (Arch Convergence) : Phase 0 ---------------------------------------------------------
+
+l3-smoke: ## L3: verify env/tools/inputs before any convergence
+	@$(RUN) bash -lc "set -euo pipefail; \
+	  echo '[L3] Smoking the env...'; \
+	  need_cmds=(ansible jq python3 bash); \
+	  for c in $${need_cmds[@]}; do \
+	    if ! command -v $$c >/dev/null 2>&1; then \
+	      echo 'Missing required command:' $$c >&2; exit 1; \
+	    fi; \
+	  done; \
+	  echo '[L3] Tool versions:'; \
+	  ansible --version | head -n1 || true; \
+	  jq --version || true; \
+	  python3 --version || true; \
+	  bash --version | head -n1 || true; \
+	  echo '[L3] Checking expected repo paths...'; \
+	  if [ -f ansible/playbooks/l3_arch.yml ]; then \
+	    PLAYBOOK=ansible/playbooks/l3_arch.yml; \
+	  elif [ -f ansible/playbooks/l3_provision.yml ]; then \
+	    PLAYBOOK=ansible/playbooks/l3_provision.yml; \
+	  else \
+	    echo 'No L3 playbook found (expected ansible/playbooks/l3_arch.yml or l3_provision.yml)'; \
+	    exit 1; \
+	  fi; \
+	  echo '  ✓ Playbook:' $$PLAYBOOK; \
+	  if [ ! -f artifacts/l2_inventory/inventory.json ]; then \
+	    echo 'Missing artifacts/l2_inventory/inventory.json (run L2 first)'; exit 1; \
+	  fi; \
+	  jq -e '. | type == \"object\"' artifacts/l2_inventory/inventory.json >/dev/null || { echo 'inventory.json is not a JSON object'; exit 1; }; \
+	  echo '  ✓ L2 inventory present and valid JSON'; \
+	  echo '[L3] Smoke OK.'"
+
+l3-prepare: ## L3: create scaffolding, clean stale outputs, summarize inputs
+	@$(RUN) bash -lc "set -euo pipefail; \
+	  echo '[L3] Preparing folders...'; \
+	  mkdir -p artifacts/l3/l3_logs artifacts/l3/pull_logs; \
+	  rm -f artifacts/l3/l3_summary.json artifacts/l3/.lock || true; \
+	  echo '[L3] Verifying inventory...'; \
+	  if [ ! -f artifacts/l2_inventory/inventory.json ]; then \
+	    echo 'Missing artifacts/l2_inventory/inventory.json (run L2 first)'; exit 1; \
+	  fi; \
+	  echo '[L3] Hosts discovered in inventory:'; \
+	  if jq -e '. | type == \"object\"' artifacts/l2_inventory/inventory.json >/dev/null 2>&1; then \
+	    jq -r 'keys[]' artifacts/l2_inventory/inventory.json | sed 's/^/  - /'; \
+	  else \
+	    echo '  (inventory is not an object; please fix)'; exit 1; \
+	  fi; \
+	  echo '[L3] Prepare OK → artifacts/l3/'"
+
+# --- L3 (Arch Convergence) : Phase 1 ---------------------------------------------------------
+
+#   L2_INVENTORY_SRC=path/to/inventory.json make l3-fetch-inventory
+L2_INVENTORY_SRC ?= artifacts/l2_inventory/inventory.json
+
+l3-fetch-inventory: ## L3: fetch/refresh L2 inventory into standard location with validation
+	@set -euo pipefail; \
+	ROOT_DIR='$(CURDIR)'; \
+	echo "[L3] Fetching inventory..."; \
+	echo "  L2_INVENTORY_SRC=$(L2_INVENTORY_SRC)"; \
+	RAW_SRC='$(L2_INVENTORY_SRC)'; \
+	case "$$RAW_SRC" in \
+	  /*) SRC="$$RAW_SRC" ;; \
+	  *)  SRC="$$ROOT_DIR/$$RAW_SRC" ;; \
+	esac; \
+	DEST_DIR="$$ROOT_DIR/artifacts/l2_inventory"; \
+	DEST_FILE="$$DEST_DIR/inventory.json"; \
+	echo "  SRC : $$SRC"; \
+	echo "  DEST: $$DEST_FILE"; \
+	mkdir -p "$$DEST_DIR" "$$ROOT_DIR/artifacts/l3"; \
+	if [ ! -f "$$SRC" ]; then \
+	  echo "❌ Source inventory not found: $$SRC" >&2; \
+	  echo "Hint: set L2_INVENTORY_SRC to the path of your L2 inventory.json" >&2; \
+	  PDIR="$$(dirname "$$SRC")"; \
+	  echo "Parent dir contents:"; ls -la "$$PDIR" 2>/dev/null || echo "(cannot list parent dir)"; \
+	  exit 1; \
+	fi; \
+	if ! jq -e '. | type == "object"' "$$SRC" >/dev/null; then \
+	  echo "❌ Invalid inventory (expected top-level JSON object): $$SRC" >&2; \
+	  exit 1; \
+	fi; \
+	if [ "$$SRC" != "$$DEST_FILE" ]; then \
+	  cp -f "$$SRC" "$$DEST_FILE"; \
+	  echo "  ✓ Copied inventory to $$DEST_FILE"; \
+	else \
+	  echo "  ✓ Inventory already at canonical path"; \
+	fi; \
+	if command -v shasum >/dev/null 2>&1; then \
+	  shasum -a 256 "$$DEST_FILE" | awk '{print $$1}' > "$$ROOT_DIR/artifacts/l3/l2_inventory.sha256"; \
+	elif command -v sha256sum >/dev/null 2>&1; then \
+	  sha256sum "$$DEST_FILE" | awk '{print $$1}' > "$$ROOT_DIR/artifacts/l3/l2_inventory.sha256"; \
+	else \
+	  echo "(sha256 tool not found; skipping checksum)"; \
+	  : > "$$ROOT_DIR/artifacts/l3/l2_inventory.sha256"; \
+	fi; \
+	printf "  ✓ Checksum: "; \
+	[ -s "$$ROOT_DIR/artifacts/l3/l2_inventory.sha256" ] && cat "$$ROOT_DIR/artifacts/l3/l2_inventory.sha256" || echo "(none)"; \
+	echo "[L3] Hosts in inventory:"; \
+	jq -r 'keys[]' "$$DEST_FILE" | sed 's/^/  - /' || true; \
+	echo "[L3] Fetch OK → $$DEST_FILE"
+
+INV := $(CURDIR)/artifacts/l2_inventory/inventory.json
+OUT := $(CURDIR)/artifacts/l3/hosts
+
+l3-validate-inventory: ## L3: validate schema & readiness in artifacts/l2_inventory/inventory.json
+	@set -euo pipefail
+	@echo "[L3] Validating inventory: $(INV)"
+	@test -f "$(INV)" || (echo "❌ Missing $(INV). Run L2 or l3-fetch-inventory." && exit 1)
+	@jq -e "type==\"object\"" "$(INV)" >/dev/null || (echo "❌ Top-level JSON must be an object (host -> props)" && exit 1)
+	@jq -e "length>0" "$(INV)" >/dev/null || (echo "❌ Inventory has no hosts" && exit 1)
+	@# Require per-host ip and ssh_user as non-empty strings
+	@if ! jq -e 'all(.[]; (.ip|type)=="string" and (.ip|length)>0 and (.ssh_user|type)=="string" and (.ssh_user|length)>0 and (.guest_agent_ip|type)=="string" and (.guest_agent_ip|length)>0 and (.guest_agent_healthy == true))' "$(INV)" >/dev/null; then \
+	  echo '❌ Invalid hosts (ip/ssh_user/guest_agent_ip missing/empty, or guest_agent_healthy!=true):'; \
+	  jq -r 'to_entries | map(select((.value.ip|type)!="string" or (.value.ip|length)==0 or (.value.ssh_user|type)!="string" or (.value.ssh_user|length)==0 or (.value.guest_agent_ip|type)!="string" or (.value.guest_agent_ip|length)==0 or (.value.guest_agent_healthy != true))) | .[] | "- \(.key)"' "$(INV)"; \
+	  exit 1; \
+	fi
+	@echo "[L3] ✅ Inventory OK"
+	@echo "[L3] Hosts:"
+	@jq -r "keys[]" "$(INV)" | sed 's/^/  - /'
+
+l3-render-inventory: ## L3: render Ansible inventory to artifacts/l3/hosts
+	@set -euo pipefail
+	@echo "[L3] Rendering inventory → $(OUT)"
+	@test -f "$(INV)" || (echo "❌ Missing $(INV). Run l3-fetch-inventory / l3-validate-inventory." && exit 1)
+	@mkdir -p "$(CURDIR)/artifacts/l3"
+	@{ \
+	  echo "# generated by l3-render-inventory"; \
+	  echo "[all]"; \
+	  jq -r 'to_entries \
+	    | .[] \
+	    | "\(.key) ansible_host=\((.value.guest_agent_ip // (.value.ip | sub("/[0-9]+$$"; "")))) ansible_user=\(.value.ssh_user)"' \
+	    "$(INV)"; \
+	} > "$(OUT)"
+	@echo "[L3] Wrote $(OUT)"
+	@echo "[L3] Preview:"
+	@sed -n '1,20p' "$(OUT)"
