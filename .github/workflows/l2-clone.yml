@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       l1_run_id:
-        description: "L1 run id to fetch artifacts from"
+        description: "L1 workflow run id to fetch artifacts from"
         required: true
         type: string
       artifact_name:
-        description: "Artifact name from L1"
-        required: false
+        description: "Artifact name produced by L1"
+        required: true
         default: "l1-template-artifacts"
         type: string
   workflow_run:
@@ -17,54 +17,51 @@ on:
     types: [completed]
 
 permissions:
-  actions: read
   contents: read
+  actions: read
 
 concurrency:
-  group: l2-step1-${{ github.ref }}
+  group: l2-plan-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  fetch_and_validate:
-    # Only run if:
-    # - manual dispatch, OR
-    # - triggered by L1 AND L1 concluded 'success'
+  l2:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     environment: lab
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     env:
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'l1-template-artifacts' }}
+      # Secrets used to populate TF_VAR_* for the provider/module
+      PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
 
-    outputs:
-      template_vmid: ${{ steps.parse.outputs.template_vmid }}
-      template_node: ${{ steps.parse.outputs.template_node }}
-      template_name: ${{ steps.parse.outputs.template_name }}
-      manifest_path: ${{ steps.locate.outputs.manifest_path }}
+      # If your TF needs a public key variable, keep this. Otherwise you can remove it.
+      TF_VAR_PROXMOX_VM_PUBLIC_KEY: ${{ secrets.TF_VAR_PROXMOX_VM_PUBLIC_KEY }}
+
+      # Ensure no Doppler in CI
+      CI: "true"
+      DOPPLER: "0"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1) Figure out which L1 run to read from (same as you already do)
-      - name: Determine L1 run id
+      - name: Resolve L1 run id and artifact
         id: runid
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.l1_run_id || '' }}" ]]; then
-            echo "run_id=${{ inputs.l1_run_id }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=l1-template-artifacts" >> "$GITHUB_OUTPUT"
           else
-            echo "No L1 run id available. Provide 'l1_run_id' when running manually." >&2
-            exit 1
+            echo "run_id=${{ inputs.l1_run_id }}" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=${{ inputs.artifact_name }}" >> "$GITHUB_OUTPUT"
           fi
 
-      # 2) List artifacts on that run so we know the exact names (super useful for debugging)
       - name: List artifacts on L1 run
-        id: listart
         uses: actions/github-script@v7
         with:
           script: |
@@ -74,105 +71,64 @@ jobs:
               repo: context.repo.repo,
               run_id
             });
-            core.info(`Found ${data.artifacts.length} artifact(s):`);
-            for (const a of data.artifacts) {
-              core.info(`- ${a.name} (id=${a.id}) expired=${a.expired} size=${a.size_in_bytes}`);
-            }
-            // try to find your expected default first, but also fall back to any name that starts with l1-
-            const preferred = data.artifacts.find(a => a.name === 'l1-template-artifacts' && !a.expired);
-            const fallback  = data.artifacts.find(a => a.name.startsWith('l1-') && !a.expired);
-            const chosen = preferred || fallback || null;
-            core.setOutput('found', chosen ? 'true' : 'false');
-            core.setOutput('artifact_name', chosen ? chosen.name : '');
-            core.setOutput('count', String(data.artifacts.length));
+            core.info(`Artifacts on run ${run_id}: ${data.artifacts.map(a => a.name).join(", ")}`);
 
-      # 3) Fail fast if nothing usable was found, and show the names we saw
-      - name: Ensure an artifact exists
-        if: ${{ steps.listart.outputs.found != 'true' }}
-        run: |
-          echo "No usable artifact found on L1 run ${{ steps.runid.outputs.run_id }}."
-          echo "Check the step above ('List artifacts on L1 run') for available names and expiration."
-          exit 1
-
-      # 4) Download the chosen artifact by name for that run-id
       - name: Download L1 artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.listart.outputs.artifact_name }}
+          name: ${{ steps.runid.outputs.artifact_name }}
           run-id: ${{ steps.runid.outputs.run_id }}
           repository: ${{ github.repository }}
           path: l1_artifacts
-          # Explicit token helps in some org/repo permission setups
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # (Optional) Show what we actually got
-      - name: List downloaded files
-        run: |
-          echo "Downloaded artifact: ${{ steps.listart.outputs.artifact_name }} from run ${{ steps.runid.outputs.run_id }}"
-          ls -lahR l1_artifacts || true
-
-      - name: Locate manifest json
-        id: locate
+      - name: Locate and stage manifest
+        id: stage
         shell: bash
         run: |
           set -euo pipefail
-          file="$(find l1_artifacts -type f -name 'manifest.json' | head -n1 || true)"
-          if [[ -z "${file}" ]]; then
-            echo "No manifest.json found in artifact '${{ env.ARTIFACT_NAME }}' from run ${{ steps.runid.outputs.run_id }}" >&2
+          f="$(find l1_artifacts -type f -name 'manifest.json' | head -n1 || true)"
+          if [[ -z "$f" ]]; then
+            echo "manifest.json not found in artifact '${{ steps.runid.outputs.artifact_name }}' from run ${{ steps.runid.outputs.run_id }}" >&2
+            ls -lahR l1_artifacts || true
             exit 1
           fi
-          echo "Found manifest: ${file}"
-          echo "manifest_path=${file}" >> "$GITHUB_OUTPUT"
+          mkdir -p artifacts/l1_images
+          cp -f "$f" artifacts/l1_images/manifest.json
+          echo "manifest_path=artifacts/l1_images/manifest.json" >> "$GITHUB_OUTPUT"
 
-      - name: Install jq
+      - name: Install prerequisites
         run: |
           set -euo pipefail
           sudo apt-get update -y
           sudo apt-get install -y jq
 
-      - name: Validate required fields
-        id: validate
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Export TF VARs
         shell: bash
         run: |
           set -euo pipefail
-          f="${{ steps.locate.outputs.manifest_path }}"
-          # Assert required keys exist and have sane values.
-          jq -e '
-            has("name") and
-            has("vmid") and
-            has("node") and
-            has("ostype") and
-            has("memory") and
-            has("scsi0") and
-            has("agent") and
-            has("template") and
-            (.template == 1)
-          ' "$f" >/dev/null
+          # Compact JSON for TF var
+          echo "TF_VAR_l1_manifest_json=$(jq -c '.' artifacts/l1_images/manifest.json)" >> "$GITHUB_ENV"
+          echo "TF_VAR_pve_access_host=${PVE_ACCESS_HOST}" >> "$GITHUB_ENV"
+          echo "TF_VAR_pm_token_id=${PM_TOKEN_ID}" >> "$GITHUB_ENV"
+          echo "TF_VAR_pm_token_secret=${PM_TOKEN_SECRET}" >> "$GITHUB_ENV"
 
-          echo "Validation OK."
-
-      - name: Parse fields for downstream steps
-        id: parse
-        shell: bash
+      - name: Terraform init
+        working-directory: terraform/l2
         run: |
           set -euo pipefail
-          f="${{ steps.locate.outputs.manifest_path }}"
-          name="$(jq -r '.name' "$f")"
-          vmid="$(jq -r '.vmid' "$f")"
-          node="$(jq -r '.node' "$f")"
+          terraform init -input=false
 
-          echo "template_name=${name}" >> "$GITHUB_OUTPUT"
-          echo "template_vmid=${vmid}" >> "$GITHUB_OUTPUT"
-          echo "template_node=${node}" >> "$GITHUB_OUTPUT"
-
-      - name: Summarize
-        if: always()
-        shell: bash
+      - name: Terraform validate
+        working-directory: terraform/l2
         run: |
-          echo "### L2 Step 1: Fetch & Validate" >> $GITHUB_STEP_SUMMARY
-          echo "- Source L1 run: \`${{ steps.runid.outputs.run_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Artifact: \`${{ env.ARTIFACT_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Manifest: \`${{ steps.locate.outputs.manifest_path }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Template name: \`${{ steps.parse.outputs.template_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Template VMID: \`${{ steps.parse.outputs.template_vmid }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Template node: \`${{ steps.parse.outputs.template_node }}\`" >> $GITHUB_STEP_SUMMARY
+          set -euo pipefail
+          terraform validate
+
+      - name: Terraform plan
+        working-directory: terraform/l2
+        run: |
+          set -euo pipefail
+          terraform plan -out=tfplan
