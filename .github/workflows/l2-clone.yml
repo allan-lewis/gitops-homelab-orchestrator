@@ -161,6 +161,10 @@ jobs:
             exit 1
           fi
 
+          : "${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"
+          : "${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"
+          : "${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"
+
           AUTH="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
           HOST="${PVE_ACCESS_HOST%/}/api2/json"
 
@@ -181,9 +185,17 @@ jobs:
             echo "Querying guest agent for $host (vmid=$vmid node=$node)"
             resp="$(curl -fsS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/agent/network-get-interfaces")"
 
-            echo "$resp"
-            
-            ip="$(echo "$resp" | jq -r '.data[]?."ip-addresses"[]? | select(.["ip-address-type"]=="ipv4" and .["ip-address"]!="127.0.0.1") | .["ip-address"]' | head -n1)"
+            # Extract first non-lo IPv4 address
+            ip="$(echo "$resp" \
+              | jq -r '
+                  .data.result[]?
+                  | select(.name != "lo")
+                  | (.["ip-addresses"] // [])[]?
+                  | select(.["ip-address-type"] == "ipv4" and .["ip-address"] != "127.0.0.1")
+                  | .["ip-address"]
+                ' \
+              | head -n1)"
+
             if [[ -z "${ip:-}" || "$ip" == "null" ]]; then
               echo "no valid IPv4 reported by guest agent for $host"
               echo "full GA response follows:"
@@ -193,16 +205,16 @@ jobs:
 
             echo "guest agent IP for $host: $ip"
 
-            # Update the JSON for this host only
+            # Update only this host in the inventory
             jq --arg h "$host" --arg ip "$ip" \
-               '.[$h] += {guest_agent_ip: $ip, guest_agent_healthy: true}' \
-               "$INV" > "$INV.tmp"
+              '.[$h] += {guest_agent_ip: $ip, guest_agent_healthy: true}' \
+              "$INV" > "$INV.tmp"
             mv "$INV.tmp" "$INV"
 
           done < <(jq -r 'keys[]' "$INV")
 
           echo "Updated inventory.json:"
-          cat "$INV" | jq .
+          jq . "$INV"
 
       - name: List artifacts folder
         run: |
