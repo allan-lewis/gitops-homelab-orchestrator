@@ -148,6 +148,7 @@ jobs:
           set -euo pipefail
           mkdir -p ../../artifacts/l2_inventory
           terraform output -json > ../../artifacts/l2_inventory/terraform_outputs.json
+          cat artifacts/l2_inventory/terraform_outputs.json
 
       - name: Verify IP via guest agent
         id: ga_check
