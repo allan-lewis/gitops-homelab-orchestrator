@@ -73,13 +73,15 @@ jobs:
             });
             core.info(`Artifacts on run ${run_id}: ${data.artifacts.map(a => a.name).join(", ")}`);
 
-      - name: Download L1 artifact
+      - name: Download L1 artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.runid.outputs.artifact_name }}
+          pattern: l1-*
           run-id: ${{ steps.runid.outputs.run_id }}
           repository: ${{ github.repository }}
+          merge-multiple: true
           path: l1_artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Locate and stage manifest
         id: stage
