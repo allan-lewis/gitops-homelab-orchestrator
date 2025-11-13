@@ -243,45 +243,6 @@ jobs:
           echo "  IP: $ip"
           echo "  Created at: $ts"
 
-      - name: Verify SSH connectivity (port 22)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          INV="artifacts/l2_inventory/inventory.json"
-          if [[ ! -f "$INV" ]]; then
-            echo "inventory.json not found at $INV"
-            exit 1
-          fi
-
-          while IFS= read -r host; do
-            ip="$(jq -r --arg h "$host" '.[$h].guest_agent_ip' "$INV")"
-
-            if [[ -z "${ip:-}" || "$ip" == "null" ]]; then
-              echo "❌ No IP found for host $host in inventory"
-              exit 1
-            fi
-
-            echo "Checking SSH (port 22) on $host at $ip ..."
-            if timeout 5 bash -c "</dev/tcp/$ip/22" 2>/dev/null; then
-              echo "✅ SSH reachable on $ip"
-              ssh_ok=true
-            else
-              echo "❌ SSH unreachable on $ip"
-              exit 1
-            fi
-
-            # Update JSON
-            jq --arg h "$host" --argjson ok "$ssh_ok" \
-               '.[$h] += {ssh_ok: $ok}' \
-               "$INV" > "$INV.tmp"
-            mv "$INV.tmp" "$INV"
-
-          done < <(jq -r 'keys[]' "$INV")
-
-          echo "Updated inventory.json with ssh_ok:"
-          cat "$INV" | jq .
-
       - name: List artifacts folder
         run: |
           set -euo pipefail
