@@ -216,6 +216,33 @@ jobs:
           echo "Updated inventory.json:"
           jq . "$INV"
 
+      - name: Add timestamp and surface outputs
+        id: finalize
+        shell: bash
+        run: |
+          set -euo pipefail
+          ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          jq --arg ts "$ts" '.[] |= . + {created_at: $ts}' artifacts/l2_inventory/inventory.json > artifacts/l2_inventory/inventory.json.tmp
+          mv artifacts/l2_inventory/inventory.json.tmp artifacts/l2_inventory/inventory.json
+
+          host="$(jq -r 'keys[0]' artifacts/l2_inventory/inventory.json)"
+          vmid="$(jq -r --arg h "$host" '.[$h].vm_id' artifacts/l2_inventory/inventory.json)"
+          node="$(jq -r --arg h "$host" '.[$h].node' artifacts/l2_inventory/inventory.json)"
+          ip="$(jq -r --arg h "$host" '.[$h].guest_agent_ip' artifacts/l2_inventory/inventory.json)"
+
+          echo "vm_name=$host" >> "$GITHUB_OUTPUT"
+          echo "vm_id=$vmid"   >> "$GITHUB_OUTPUT"
+          echo "node=$node"   >> "$GITHUB_OUTPUT"
+          echo "ip=$ip"       >> "$GITHUB_OUTPUT"
+
+          echo "✅ L2 summary:"
+          echo "  Host: $host"
+          echo "  Node: $node"
+          echo "  VMID: $vmid"
+          echo "  IP: $ip"
+          echo "  Created at: $ts"
+
       - name: List artifacts folder
         run: |
           set -euo pipefail
