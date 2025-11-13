@@ -148,7 +148,7 @@ jobs:
           echo "Querying Proxmox guest agent for IP address..."
 
           # Load VM details from terraform outputs
-          vmid="$(jq -r '.vmid.value' terraform/l2/terraform.tfstate)"
+          vmid="$(jq -r '.vm_id.value' terraform/l2/terraform.tfstate)"
           node="$(jq -r '.node.value' terraform/l2/terraform.tfstate)"
 
           if [[ -z "$vmid" || "$vmid" == "null" ]]; then
