@@ -155,6 +155,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          ls -lrth
+          ls -lrth artifacts/
+          cat artifacts/l2_inventory/inventory.json
           echo "Querying Proxmox guest agent for IP address..."
 
           # Read from the outputs file we just wrote
