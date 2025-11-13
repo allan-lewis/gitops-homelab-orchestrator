@@ -158,7 +158,7 @@ jobs:
           echo "Querying Proxmox guest agent for IP address..."
 
           # Read from the outputs file we just wrote
-          OUT="../../artifacts/l2_inventory/inventory.json"
+          OUT="artifacts/l2_inventory/inventory.json"
           jq -r 'keys[]' "$OUT"
 
           vmid="$(jq -r '.vm_id.value' "$OUT")"
