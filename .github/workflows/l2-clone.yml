@@ -133,3 +133,23 @@ jobs:
         run: |
           set -euo pipefail
           terraform plan -out=tfplan
+
+      - name: Terraform apply
+        working-directory: terraform/l2
+        run: |
+          set -euo pipefail
+          terraform apply -auto-approve tfplan
+
+      - name: List artifacts folder
+        run: |
+          set -euo pipefail
+          echo "Contents of artifacts folder:"
+          ls -lahR artifacts || true
+
+      - name: Upload L2 artifacts
+        if: ${{ hashFiles('artifacts/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2-artifacts
+          path: artifacts
+          retention-days: 14
