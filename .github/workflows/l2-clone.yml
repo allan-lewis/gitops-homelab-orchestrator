@@ -153,3 +153,57 @@ jobs:
           name: l2-artifacts
           path: artifacts
           retention-days: 14
+
+      - name: Verify IP via guest agent
+        id: ga_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Querying Proxmox guest agent for IP address..."
+
+          # Load VM details from terraform outputs
+          vmid="$(jq -r '.vmid.value' terraform/l2/terraform.tfstate)"
+          node="$(jq -r '.node.value' terraform/l2/terraform.tfstate)"
+
+          if [[ -z "$vmid" || "$vmid" == "null" ]]; then
+            echo "❌ No VMID found in terraform outputs"
+            exit 1
+          fi
+          if [[ -z "$node" || "$node" == "null" ]]; then
+            echo "❌ No node found in terraform outputs"
+            exit 1
+          fi
+
+          AUTH="Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}"
+          HOST="${PVE_ACCESS_HOST%/}/api2/json"
+
+          echo "Fetching GA network interfaces for VMID $vmid on node $node..."
+          resp="$(curl -fsS -H "$AUTH" "$HOST/nodes/$node/qemu/$vmid/agent/network-get-interfaces" || true)"
+
+          if [[ -z "$resp" ]]; then
+            echo "❌ Guest agent query returned no data"
+            exit 1
+          fi
+
+          ip="$(echo "$resp" | jq -r '.data[]?."ip-addresses"[]? | select(.["ip-address-type"]=="ipv4" and .["ip-address"]!="127.0.0.1") | .["ip-address"]' | head -n1 || true)"
+
+          if [[ -z "$ip" || "$ip" == "null" ]]; then
+            echo "❌ No valid IPv4 address returned by guest agent"
+            echo "Full GA response for debugging:"
+            echo "$resp" | jq .
+            exit 1
+          fi
+
+          echo "✅ Guest agent reports IP: $ip"
+          echo "ip=$ip" >> "$GITHUB_OUTPUT"
+
+          # Enrich existing inventory files
+          jq --arg ip "$ip" '.[] |= . + {ip: $ip, guest_agent_healthy: true}' artifacts/l2_inventory/inventory.json > artifacts/l2_inventory/inventory.json.tmp
+          mv artifacts/l2_inventory/inventory.json.tmp artifacts/l2_inventory/inventory.json
+
+          # Update YAML (simple append or rewrite)
+          echo "ip: $ip" >> artifacts/l2_inventory/inventory.yaml
+          echo "guest_agent_healthy: true" >> artifacts/l2_inventory/inventory.yaml
+
+          echo "Updated inventory:"
+          cat artifacts/l2_inventory/inventory.json
