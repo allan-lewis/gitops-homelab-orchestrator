@@ -1,0 +1,18 @@
+---
+# Which helper to use: paru or yay (we’ll install paru-bin by default)
+arch_aur_helper: paru
+arch_aur_helper_pkg: paru-bin   # faster than building rust from source
+
+# Which user will build/install AUR packages (must have passwordless sudo)
+arch_aur_user: "{{ arch_hardening_user | default('lab') }}"
+
+# AUR packages to install (example shown)
+arch_aur_packages:
+  - neofetch
+#  - nerd-fonts-jetbrains-mono
+#  - tlpui
+#  - spotify
+#  - slack-desktop
+
+arch_aur_known_pgp_keys:
+  - "7C20ADCD35D9797789B6BCC046D62DD9F1DE636E"

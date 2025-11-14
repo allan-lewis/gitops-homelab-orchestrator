@@ -367,3 +367,11 @@ l3-dry-run: ## L3: full Ansible dry-run with pinned host keys
 	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml --check
 	@echo "[L3] ✅ Dry-run complete"
 
+l3-apply: ## L3: full Ansible convergence (apply changes for all roles)
+	@set -euo pipefail
+	@echo "[L3] Apply (real convergence run)..."
+	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
+	@test -f "$(KNOWN)"    || (echo "❌ Missing $(KNOWN). Run l3-scan-hostkeys first." && exit 1)
+	@export ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes"; \
+	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml
+	@echo "[L3] ✅ Apply complete"

@@ -48,6 +48,16 @@
   when: arch_base_journald_persistent
   become: true
 
+- name: Journald | ensure drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: arch_base_journald_persistent
+  become: true
+
 - name: Journald | force Storage=persistent (drop-in)
   ansible.builtin.copy:
     dest: /etc/systemd/journald.conf.d/99-persistent.conf

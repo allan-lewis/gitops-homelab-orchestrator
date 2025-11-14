@@ -1,4 +1,121 @@
 ---
-- name: L3 | arch_hardening | dry-run placeholder
-  debug:
-    msg: "arch_hardening: would configure users, sudo, sshd, firewall"
+# Packages needed for SSH/sudo; UFW optional
+- name: Ensure base hardening packages installed
+  community.general.pacman:
+    name: "{{ ['openssh', 'sudo'] + (['ufw'] if arch_hardening_firewall == 'ufw' else []) }}"
+    state: present
+    update_cache: true
+  become: true
+
+# ----- USER / GROUP / AUTH KEYS -----
+- name: Ensure primary group exists
+  ansible.builtin.group:
+    name: "{{ arch_hardening_user }}"
+    gid: "{{ arch_hardening_gid }}"
+    state: present
+  become: true
+  when: arch_hardening_manage_user
+
+- name: Ensure user exists and is in wheel
+  ansible.builtin.user:
+    name: "{{ arch_hardening_user }}"
+    uid: "{{ arch_hardening_uid }}"
+    group: "{{ arch_hardening_user }}"
+    groups: ["wheel"]
+    append: true
+    shell: "{{ arch_hardening_shell }}"
+    create_home: true
+    state: present
+  become: true
+  when: arch_hardening_manage_user
+
+- name: Authorize SSH keys for managed user
+  ansible.posix.authorized_key:
+    user: "{{ arch_hardening_user }}"
+    state: present
+    key: "{{ item }}"
+    manage_dir: true
+  loop: "{{ arch_hardening_authorized_keys }}"
+  become: true
+  when: arch_hardening_manage_user
+
+# ----- SUDO POLICY -----
+- name: Ensure /etc/sudoers.d exists
+  ansible.builtin.file:
+    path: /etc/sudoers.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  become: true
+
+- name: Configure wheel sudo policy (passwordless toggle)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/99-wheel
+    owner: root
+    group: root
+    mode: "0440"
+    content: |
+      %wheel ALL=(ALL) {{ 'NOPASSWD:' if arch_hardening_passwordless_sudo else '' }} ALL
+  become: true
+
+# ----- SSHD HARDENING (drop-in, no full file overwrite) -----
+- name: Ensure sshd drop-in dir exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Install sshd hardening drop-in
+  ansible.builtin.template:
+    src: sshd_99-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart sshd
+  become: true
+
+- name: Ensure sshd is enabled and running
+  ansible.builtin.systemd:
+    name: sshd
+    enabled: true
+    state: started
+  become: true
+
+# ----- OPTIONAL FIREWALL (UFW) -----
+- name: Enable and start ufw (optional)
+  ansible.builtin.systemd:
+    name: ufw
+    enabled: true
+    state: started
+  when: arch_hardening_firewall == 'ufw'
+  become: true
+
+- name: Allow SSH via ufw
+  ansible.builtin.command: ufw allow 22/tcp
+  changed_when: "'Rule added' in ufw_ssh.stdout or 'Skipping' in ufw_ssh.stdout"
+  register: ufw_ssh
+  when: arch_hardening_firewall == 'ufw'
+  become: true
+
+- name: Allow extra ufw ports
+  ansible.builtin.command: "ufw allow {{ item }}"
+  loop: "{{ arch_hardening_ufw_extra_allow }}"
+  register: ufw_extra
+  changed_when: >
+    ufw_extra.stdout is search('Rule added') or
+    ufw_extra.stdout is search('Skipping')
+  when: arch_hardening_firewall == 'ufw'
+  become: true
+
+- name: Enable ufw (non-interactive)
+  ansible.builtin.command: ufw --force enable
+  register: ufw_enable
+  changed_when: "'Firewall is active' in ufw_enable.stdout"
+  when: arch_hardening_firewall == 'ufw'
+  become: true
+  notify: reload ufw

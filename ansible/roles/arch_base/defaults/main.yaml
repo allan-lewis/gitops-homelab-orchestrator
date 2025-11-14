@@ -10,6 +10,8 @@ arch_base_packages:
   - htop
   - unzip
   - tar
+  - cmatrix
+  - fastfetch
 
 arch_base_enable_timesyncd: true
 arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"

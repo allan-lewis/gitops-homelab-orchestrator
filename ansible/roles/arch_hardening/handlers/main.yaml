@@ -1,0 +1,11 @@
+---
+- name: restart sshd
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+  become: true
+
+- name: reload ufw
+  ansible.builtin.command: ufw reload
+  changed_when: false
+  become: true

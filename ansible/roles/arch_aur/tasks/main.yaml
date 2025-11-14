@@ -1,4 +1,187 @@
 ---
-- name: L3 | arch_aur | dry-run placeholder
-  debug:
-    msg: "arch_aur: would install paru and selected AUR packages"
+# Ensure prereqs for building AUR packages exist (harmless if already present)
+- name: AUR | Ensure prerequisites
+  community.general.pacman:
+    name:
+      - git
+      - base-devel
+    state: present
+    update_cache: true
+  become: true
+
+# -------------------------------------------------------------------
+# Install AUR helper (paru-bin by default) for the regular user
+# -------------------------------------------------------------------
+
+- name: AUR | Check if helper is already installed
+  ansible.builtin.command: "{{ arch_aur_helper }} --version"
+  register: _aur_helper_version
+  changed_when: false
+  failed_when: false
+
+- name: AUR | Create temp build dir
+  ansible.builtin.file:
+    path: "/tmp/aur-helper-build"
+    state: directory
+    mode: "0755"
+    owner: "{{ arch_aur_user }}"
+    group: "{{ arch_aur_user }}"
+  when: _aur_helper_version.rc != 0
+  become: true
+
+- name: AUR | Clone helper ({{ arch_aur_helper_pkg }}) if missing
+  ansible.builtin.git:
+    repo: "https://aur.archlinux.org/{{ arch_aur_helper_pkg }}.git"
+    dest: "/tmp/aur-helper-build/{{ arch_aur_helper_pkg }}"
+    version: HEAD
+    update: yes
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  when: _aur_helper_version.rc != 0
+
+- name: AUR | Build & install helper non-interactively
+  ansible.builtin.command: "makepkg -si --noconfirm --needed"
+  args:
+    chdir: "/tmp/aur-helper-build/{{ arch_aur_helper_pkg }}"
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  environment:
+    # Prevent editor/review prompts from helper toolchains
+    MAKEPKG: "1"
+  when: _aur_helper_version.rc != 0
+
+# -------------------------------------------------------------------
+# Prepare GPG for AUR usage + robust key pre-import (valid Ansible)
+# -------------------------------------------------------------------
+
+- name: AUR | Ensure GnuPG, CA bundle, and curl are present
+  community.general.pacman:
+    name:
+      - gnupg
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: false
+  become: true
+
+- name: AUR | Ensure ~/.gnupg exists
+  ansible.builtin.file:
+    path: "/home/{{ arch_aur_user }}/.gnupg"
+    state: directory
+    owner: "{{ arch_aur_user }}"
+    group: "{{ arch_aur_user }}"
+    mode: "0700"
+  become: true
+
+- name: AUR | Configure keyserver (HKPS on 443) for the AUR user
+  ansible.builtin.copy:
+    dest: "/home/{{ arch_aur_user }}/.gnupg/dirmngr.conf"
+    owner: "{{ arch_aur_user }}"
+    group: "{{ arch_aur_user }}"
+    mode: "0600"
+    content: |
+      keyserver hkps://keyserver.ubuntu.com
+      keyserver-options timeout=10
+  become: true
+
+- name: AUR | Mirror keyserver in gpg.conf
+  ansible.builtin.copy:
+    dest: "/home/{{ arch_aur_user }}/.gnupg/gpg.conf"
+    owner: "{{ arch_aur_user }}"
+    group: "{{ arch_aur_user }}"
+    mode: "0600"
+    content: |
+      keyserver hkps://keyserver.ubuntu.com
+      keyserver-options timeout=10
+  become: true
+
+- name: AUR | Restart dirmngr for user
+  ansible.builtin.command: gpgconf --kill dirmngr
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  changed_when: false
+  failed_when: false
+
+# --------------------------
+# OPTIONAL pre-import keys
+# vars example:
+#   arch_aur_known_pgp_keys:
+#     - "7C20ADCD35D9797789B6BCC046D62DD9F1DE636E"
+# --------------------------
+
+- name: AUR | Check if PGP keys are already present
+  ansible.builtin.command: >
+    gpg --list-keys --with-colons {{ item }}
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  register: _gpg_key_check
+  failed_when: false         # rc=2 when key missing -> don't fail
+  changed_when: false
+  loop: "{{ arch_aur_known_pgp_keys | default([]) }}"
+  when: (arch_aur_known_pgp_keys | default([])) | length > 0
+
+- name: AUR | Build list of missing keys
+  ansible.builtin.set_fact:
+    _missing_pgp_keys: "{{ (_missing_pgp_keys | default([])) + [ item.item ] }}"
+  when: item.rc != 0 or ('pub:' not in (item.stdout | default('')))
+  loop: "{{ _gpg_key_check.results | default([]) }}"
+  when: (arch_aur_known_pgp_keys | default([])) | length > 0
+
+- name: AUR | Import missing PGP keys (multi-keyserver with HTTPS fallback)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    key="{{ item }}"
+    ks_list=(hkps://keyserver.ubuntu.com hkps://keys.openpgp.org hkp://keyserver.ubuntu.com:11371)
+    for ks in "${ks_list[@]}"; do
+      if gpg --keyserver "$ks" --keyserver-options timeout=10 --recv-keys "$key"; then
+        exit 0
+      fi
+    done
+    # Fallback: pull armored key over HTTPS and import
+    curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x${key}" | gpg --import
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  register: _gpg_import
+  retries: 3
+  delay: 5
+  until: _gpg_import.rc == 0
+  loop: "{{ _missing_pgp_keys | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (_missing_pgp_keys | default([])) | length > 0
+
+- name: AUR | Verify imported keys exist
+  ansible.builtin.command: >
+    gpg --list-keys --with-colons {{ item }}
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  register: _gpg_verify
+  changed_when: false
+  failed_when: "'pub:' not in (_gpg_verify.stdout | default(''))"
+  loop: "{{ _missing_pgp_keys | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  when: (_missing_pgp_keys | default([])) | length > 0
+
+# -------------------------------------------------------------------
+# Install AUR packages (idempotent) using the helper
+# -------------------------------------------------------------------
+
+- name: AUR | Install requested packages (if any)
+  kewlfft.aur.aur:
+    use: "{{ arch_aur_helper }}"           # e.g., paru or yay
+    name: "{{ arch_aur_packages }}"
+    state: present
+    extra_args: "--noconfirm --needed"
+  become: true
+  become_user: "{{ arch_aur_user }}"
+  when: arch_aur_packages | length > 0
+
+# Optional clean-up (kept because build dirs are small and help debugging)
+# - name: AUR | Clean temp build dir
+#   ansible.builtin.file:
+#     path: "/tmp/aur-helper-build"
+#     state: absent
+#   become: true

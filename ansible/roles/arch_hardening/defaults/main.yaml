@@ -1,0 +1,35 @@
+---
+# --- user management ---
+arch_hardening_manage_user: true
+arch_hardening_user: "{{ gitops_user | default('lab') }}"
+arch_hardening_uid: "{{ gitops_uid | default(1000) }}"
+arch_hardening_gid: "{{ gitops_gid | default(1000) }}"
+arch_hardening_shell: /bin/bash
+# Provide a list of public keys (strings). Example:
+# arch_hardening_authorized_keys:
+#   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI.... comment"
+arch_hardening_authorized_keys: []
+
+# --- sudo policy ---
+arch_hardening_passwordless_sudo: true  # if false, require password
+
+# --- sshd hardening (applied as a drop-in) ---
+arch_hardening_sshd:
+  PermitRootLogin: "no"
+  PasswordAuthentication: "no"
+  PubkeyAuthentication: "yes"
+  KbdInteractiveAuthentication: "no"
+  ChallengeResponseAuthentication: "no"
+  MaxAuthTries: "3"
+  LoginGraceTime: "20s"
+  ClientAliveInterval: "300"
+  ClientAliveCountMax: "2"
+  UsePAM: "yes"
+  X11Forwarding: "no"
+  AllowTcpForwarding: "yes"
+  AllowAgentForwarding: "yes"
+  # You can add more here as needed
+
+# --- firewall (optional) ---
+arch_hardening_firewall: "none"  # choices: none, ufw
+arch_hardening_ufw_extra_allow: []  # e.g., ["8080/tcp", "9100/tcp"]

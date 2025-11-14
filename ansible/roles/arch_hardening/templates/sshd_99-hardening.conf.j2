@@ -1,0 +1,5 @@
+# Managed by Ansible (arch_hardening)
+# sshd drop-in hardening
+{% for k, v in arch_hardening_sshd.items() %}
+{{ k }} {{ v }}
+{% endfor %}
