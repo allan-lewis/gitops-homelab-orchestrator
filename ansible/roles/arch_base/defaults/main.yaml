@@ -1,0 +1,16 @@
+---
+arch_base_packages:
+  - python        # ensure Ansible runtime
+  - ca-certificates
+  - openssh
+  - curl
+  - jq
+  - git
+  - vim
+  - htop
+  - unzip
+  - tar
+
+arch_base_enable_timesyncd: true
+arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"
+arch_base_journald_persistent: true

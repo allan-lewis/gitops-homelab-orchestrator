@@ -1,0 +1,4 @@
+---
+- name: L3 | arch_monitoring | dry-run placeholder
+  debug:
+    msg: "arch_monitoring: would configure exporters/log agents"

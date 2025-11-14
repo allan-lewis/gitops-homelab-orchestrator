@@ -1,0 +1,4 @@
+---
+- name: L3 | arch_hardening | dry-run placeholder
+  debug:
+    msg: "arch_hardening: would configure users, sudo, sshd, firewall"

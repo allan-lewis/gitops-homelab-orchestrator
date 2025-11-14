@@ -1,0 +1,4 @@
+---
+- name: L3 | arch_aur | dry-run placeholder
+  debug:
+    msg: "arch_aur: would install paru and selected AUR packages"

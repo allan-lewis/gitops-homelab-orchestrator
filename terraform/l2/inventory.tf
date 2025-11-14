@@ -3,11 +3,11 @@ locals {
   # Build a normalized inventory per host
   inventory = {
     for name, spec in var.vms : name => {
-      vm_id   = try(module.arch[name].vm_id, null)
-      ip      = try(module.arch[name].ip_address, "")
-      node    = spec.node
+      vm_id    = try(module.arch[name].vm_id, null)
+      ip       = try(module.arch[name].ip_address, "")
+      node     = spec.node
       ssh_user = var.ci_user
-      tags    = spec.tags
+      tags     = spec.tags
     }
   }
 

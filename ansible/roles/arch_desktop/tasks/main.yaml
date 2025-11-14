@@ -1,0 +1,4 @@
+---
+- name: L3 | arch_desktop | dry-run placeholder
+  debug:
+    msg: "arch_desktop: would install a desktop environment"

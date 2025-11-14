@@ -1,0 +1,3 @@
+---
+# Global L3 knobs for Arch
+l3_enable_desktop: false

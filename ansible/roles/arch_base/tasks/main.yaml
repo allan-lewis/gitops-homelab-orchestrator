@@ -1,0 +1,62 @@
+---
+- name: Pacman | refresh cache & upgrade system
+  community.general.pacman:
+    update_cache: true
+    upgrade: true
+  become: true
+
+- name: Pacman | install base packages
+  community.general.pacman:
+    name: "{{ arch_base_packages }}"
+    state: present
+  become: true
+
+- name: QGA | ensure qemu-guest-agent installed
+  community.general.pacman:
+    name: qemu-guest-agent
+    state: present
+  become: true
+
+- name: QGA | enable & start service
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    enabled: true
+    state: started
+  become: true
+
+- name: Time | set timezone (idempotent)
+  ansible.builtin.command: "timedatectl set-timezone {{ arch_base_timezone }}"
+  changed_when: false
+  when: arch_base_timezone is truthy
+  become: true
+
+- name: Time | ensure timesyncd enabled
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+  when: arch_base_enable_timesyncd
+  become: true
+
+- name: Journald | persistent log dir
+  ansible.builtin.file:
+    path: /var/log/journal
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: arch_base_journald_persistent
+  become: true
+
+- name: Journald | force Storage=persistent (drop-in)
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/99-persistent.conf
+    mode: "0644"
+    owner: root
+    group: root
+    content: |
+      [Journal]
+      Storage=persistent
+  notify: restart journald
+  when: arch_base_journald_persistent
+  become: true

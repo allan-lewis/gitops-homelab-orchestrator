@@ -1,0 +1,4 @@
+---
+- name: L3 | arch_services | dry-run placeholder
+  debug:
+    msg: "arch_services: would enable qemu-guest-agent and service units"

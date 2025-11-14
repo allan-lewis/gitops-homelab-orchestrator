@@ -27,6 +27,7 @@ endif
 
 export RUN
 
+export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Load .env if present
@@ -300,3 +301,69 @@ l3-render-inventory: ## L3: render Ansible inventory to artifacts/l3/hosts
 	@echo "[L3] Wrote $(OUT)"
 	@echo "[L3] Preview:"
 	@sed -n '1,20p' "$(OUT)"
+
+# --- L3 (Arch Convergence) : Phase 2 ---------------------------------------------------------
+
+INV_FILE := $(CURDIR)/artifacts/l3/hosts
+KNOWN := $(CURDIR)/artifacts/l3/known_hosts
+
+# 1) Scan/pin host keys from the rendered inventory
+l3-scan-hostkeys: ## L3: build artifacts/l3/known_hosts from inventory
+	@set -euo pipefail
+	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
+	@mkdir -p "$(CURDIR)/artifacts/l3"
+	@echo "[L3] Scanning SSH host keys → $(KNOWN)"
+	@tmp="$$(mktemp)"; \
+	awk '/^[^#].*ansible_host=/{ \
+	  ah=""; ap="22"; \
+	  n=split($$0,a,/[[:space:]]+/); \
+	  for(i=1;i<=n;i++){ \
+	    if(a[i] ~ /^ansible_host=/){ split(a[i],b,"="); ah=b[2] } \
+	    if(a[i] ~ /^ansible_port=/){ split(a[i],c,"="); ap=c[2] } \
+	  } \
+	  if(ah!=""){ print ah "|" ap } \
+	}' "$(INV_FILE)" | sort -u | while IFS='|' read -r host port; do \
+	  echo "  - $$host:$$port"; \
+	  ssh-keyscan -T 5 -p "$$port" -H "$$host" >> "$$tmp" 2>/dev/null || { echo "    ⚠️  ssh-keyscan failed for $$host:$$port"; true; }; \
+	done; \
+	if [ -s "$$tmp" ]; then mv "$$tmp" "$(KNOWN)"; else : > "$(KNOWN)"; fi
+	@echo "[L3] Wrote $(KNOWN)"
+
+# 2a) Strict checking using the pinned file
+l3-ping-strict: ## L3: ansible ping with strict host key checking against pinned known_hosts
+	@set -euo pipefail
+	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
+	@test -f "$(KNOWN)" || (echo "❌ Missing $(KNOWN). Run l3-scan-hostkeys first." && exit 1)
+	@echo "[L3] Pinging with strict host key checking (UserKnownHostsFile=$(KNOWN))"
+	@ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes" \
+	ansible -i "$(INV_FILE)" all -m ping -o
+
+LIMIT_ARG := $(if $(L3_LIMIT),--limit $(L3_LIMIT),)
+
+l3-preflight: ## L3: basic remote sanity (whoami, python3, pacman, qemu-guest-agent active) with pinned host keys
+	@set -euo pipefail
+	@echo "[L3] Preflight on hosts..."
+	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
+	@test -f "$(KNOWN)"    || (echo "❌ Missing $(KNOWN). Run l3-scan-hostkeys first." && exit 1)
+	@echo "[L3] Using inventory: $(INV_FILE)"
+	@echo "[L3] Using known_hosts: $(KNOWN)"
+	@export ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes"; \
+	echo "[L3] whoami"; \
+	ansible -i "$(INV_FILE)" all $(LIMIT_ARG) -m command -a "whoami" -o; \
+	echo "[L3] python3 --version"; \
+	ansible -i "$(INV_FILE)" all $(LIMIT_ARG) -m command -a "python3 --version" -o; \
+	echo "[L3] pacman --version (Arch check)"; \
+	ansible -i "$(INV_FILE)" all $(LIMIT_ARG) -m command -a "pacman --version" -o; \
+	echo "[L3] qemu-guest-agent active check"; \
+	ansible -i "$(INV_FILE)" all $(LIMIT_ARG) -m shell -a "systemctl is-active --quiet qemu-guest-agent && echo qga=active || (systemctl status --no-pager qemu-guest-agent || true; exit 1)" -o; \
+	echo "[L3] ✅ Preflight OK"
+
+l3-dry-run: ## L3: full Ansible dry-run with pinned host keys
+	@set -euo pipefail
+	@echo "[L3] Dry-run (check mode)..."
+	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
+	@test -f "$(KNOWN)"    || (echo "❌ Missing $(KNOWN). Run l3-scan-hostkeys first." && exit 1)
+	@export ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes"; \
+	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml --check
+	@echo "[L3] ✅ Dry-run complete"
+
