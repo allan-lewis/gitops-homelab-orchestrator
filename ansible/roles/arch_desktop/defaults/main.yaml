@@ -1,0 +1,21 @@
+---
+# Choose one: gnome | plasma | xfce | sway
+arch_desktop_env: gnome
+
+# Optional: pick display manager explicitly (auto = sensible default per env)
+#   gnome -> gdm, plasma -> sddm, xfce -> lightdm, sway -> (none)
+arch_desktop_display_manager: auto   # auto|gdm|sddm|lightdm|none
+
+# Optional toggles
+arch_desktop_enable_bluetooth: false
+arch_desktop_enable_printing:  false
+
+# Extras
+arch_desktop_extra_fonts:
+  - noto-fonts
+  - noto-fonts-emoji
+  - ttf-jetbrains-mono
+
+arch_desktop_extra_packages: []   # e.g., ["firefox", "alacritty", "gnome-disk-utility"]
+
+# For XFCE you likely want network-manager-applet in session; we just enable NetworkManager system-wide

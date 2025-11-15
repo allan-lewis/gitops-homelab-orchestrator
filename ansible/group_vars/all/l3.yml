@@ -25,3 +25,12 @@ l3_enable_desktop: false
 #   interval: "1h"
 #   extra_args: ""
 #   user: "{{ arch_hardening_user | default('lab') }}"
+
+# Sample desktop config
+# arch_desktop_env: gnome
+# arch_desktop_display_manager: auto
+# arch_desktop_enable_bluetooth: true
+# arch_desktop_enable_printing: false
+# arch_desktop_extra_packages:
+#   - firefox
+#   - alacritty

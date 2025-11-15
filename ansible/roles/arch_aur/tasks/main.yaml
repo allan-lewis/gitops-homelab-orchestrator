@@ -123,7 +123,7 @@
 - name: AUR | Build list of missing keys
   ansible.builtin.set_fact:
     _missing_pgp_keys: "{{ (_missing_pgp_keys | default([])) + [ item.item ] }}"
-  when: item.rc != 0 or ('pub:' not in (item.stdout | default('')))
+  # when: item.rc != 0 or ('pub:' not in (item.stdout | default('')))
   loop: "{{ _gpg_key_check.results | default([]) }}"
   when: (arch_aur_known_pgp_keys | default([])) | length > 0
 

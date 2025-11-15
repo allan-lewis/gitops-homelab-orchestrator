@@ -1,4 +1,143 @@
 ---
-- name: L3 | arch_desktop | dry-run placeholder
-  debug:
-    msg: "arch_desktop: would install a desktop environment"
+- name: Desktop | Validate selection
+  ansible.builtin.assert:
+    that:
+      - arch_desktop_env in ['gnome', 'plasma', 'xfce', 'sway']
+    fail_msg: "arch_desktop_env must be one of: gnome|plasma|xfce|sway"
+  tags: ['arch_desktop']
+
+# Map env -> package list (lean but functional) and default DM
+- name: Desktop | Compute package set and default DM
+  ansible.builtin.set_fact:
+    _desktop_pkgs: >-
+      {{
+        {
+          'gnome':  ['gnome', 'gnome-terminal', 'gnome-tweaks', 'network-manager-applet'],
+          'plasma': ['plasma-desktop', 'kde-systemsettings', 'konsole', 'plasma-nm'],
+          'xfce':   ['xfce4', 'xfce4-goodies', 'network-manager-applet', 'lightdm-gtk-greeter'],
+          'sway':   ['sway', 'alacritty', 'waybar', 'grim', 'slurp', 'swaybg', 'xdg-desktop-portal-wlr']
+        }[arch_desktop_env]
+      }}
+    _default_dm: >-
+      {{
+        {
+          'gnome': 'gdm',
+          'plasma': 'sddm',
+          'xfce': 'lightdm',
+          'sway': 'none'
+        }[arch_desktop_env]
+      }}
+  tags: ['arch_desktop']
+
+# Resolve final DM choice
+- name: Desktop | Resolve display manager
+  ansible.builtin.set_fact:
+    _dm: "{{ (arch_desktop_display_manager == 'auto') | ternary(_default_dm, arch_desktop_display_manager) }}"
+  tags: ['arch_desktop']
+
+# Base services everyone needs on a desktop
+- name: Desktop | Ensure core packages (NetworkManager, PipeWire stack)
+  community.general.pacman:
+    name:
+      - networkmanager
+      - pipewire
+      - pipewire-alsa
+      - pipewire-pulse
+      - wireplumber
+    state: present
+    update_cache: true
+  become: true
+  tags: ['arch_desktop']
+
+# Desktop environment packages
+- name: Desktop | Install DE packages
+  community.general.pacman:
+    name: "{{ _desktop_pkgs }}"
+    state: present
+  become: true
+  tags: ['arch_desktop']
+
+# Display manager packages (if chosen)
+- name: Desktop | Install display manager packages
+  community.general.pacman:
+    name: >-
+      {{
+        (_dm == 'gdm') | ternary(['gdm'], []) +
+        (_dm == 'sddm') | ternary(['sddm'], []) +
+        (_dm == 'lightdm') | ternary(['lightdm','lightdm-gtk-greeter'], [])
+      }}
+    state: present
+  become: true
+  when: _dm != 'none'
+  tags: ['arch_desktop']
+
+# Enable the right services
+- name: Desktop | Enable NetworkManager
+  ansible.builtin.systemd:
+    name: NetworkManager
+    enabled: true
+    state: started
+  become: true
+  tags: ['arch_desktop']
+
+- name: Desktop | Enable display manager (if any)
+  ansible.builtin.systemd:
+    name: "{{ _dm }}"
+    enabled: true
+    state: started
+  become: true
+  when: _dm != 'none'
+  tags: ['arch_desktop']
+
+# Optional features: Bluetooth
+- name: Desktop | Bluetooth packages (optional)
+  community.general.pacman:
+    name: [ 'bluez', 'bluez-utils', 'blueman' ]
+    state: present
+  become: true
+  when: arch_desktop_enable_bluetooth
+  tags: ['arch_desktop']
+
+- name: Desktop | Enable bluetooth (optional)
+  ansible.builtin.systemd:
+    name: bluetooth
+    enabled: true
+    state: started
+  become: true
+  when: arch_desktop_enable_bluetooth
+  tags: ['arch_desktop']
+
+# Optional features: Printing
+- name: Desktop | Printing packages (optional)
+  community.general.pacman:
+    name: [ 'cups', 'system-config-printer' ]
+    state: present
+  become: true
+  when: arch_desktop_enable_printing
+  tags: ['arch_desktop']
+
+- name: Desktop | Enable CUPS (optional)
+  ansible.builtin.systemd:
+    name: cups
+    enabled: true
+    state: started
+  become: true
+  when: arch_desktop_enable_printing
+  tags: ['arch_desktop']
+
+# Fonts & extra apps
+- name: Desktop | Fonts
+  community.general.pacman:
+    name: "{{ arch_desktop_extra_fonts }}"
+    state: present
+  become: true
+  when: arch_desktop_extra_fonts | length > 0
+  tags: ['arch_desktop']
+
+- name: Desktop | Extra packages
+  community.general.pacman:
+    name: "{{ arch_desktop_extra_packages }}"
+    state: present
+  become: true
+  when: arch_desktop_extra_packages | length > 0
+  tags: ['arch_desktop']

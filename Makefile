@@ -367,11 +367,42 @@ l3-dry-run: ## L3: full Ansible dry-run with pinned host keys
 	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml --check
 	@echo "[L3] ✅ Dry-run complete"
 
-l3-apply: ## L3: full Ansible convergence (apply changes for all roles)
+L3_DIR   := $(CURDIR)/artifacts/l3
+APPLY_LOG := $(L3_DIR)/l3_apply.log
+SUMMARY   := $(L3_DIR)/l3_summary.json
+
+l3-apply: ## L3: converge and write artifacts/l3/l3_summary.json (per-host ok/changed/failed...)
 	@set -euo pipefail
 	@echo "[L3] Apply (real convergence run)..."
 	@test -f "$(INV_FILE)" || (echo "❌ Missing $(INV_FILE). Run l3-render-inventory first." && exit 1)
 	@test -f "$(KNOWN)"    || (echo "❌ Missing $(KNOWN). Run l3-scan-hostkeys first." && exit 1)
-	@export ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes"; \
-	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml
+	@mkdir -p "$(L3_DIR)"
+	@export ANSIBLE_NOCOLOR=1; \
+	export ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN) -o StrictHostKeyChecking=yes"; \
+	ansible-playbook -i "$(INV_FILE)" ansible/playbooks/l3_arch.yml 2>&1 | tee "$(APPLY_LOG)"; \
+	echo "[L3] Parsing PLAY RECAP → $(SUMMARY)"; \
+	awk 'BEGIN{inrecap=0; first=1; q=sprintf("%c",34); printf "{\n"} \
+	     /^PLAY RECAP/ {inrecap=1; next} \
+	     inrecap && NF { \
+	       host=$$1; sub(/:$$/,"",host); \
+	       ok=chg=unreach=fail=skip=res=ign=0; \
+	       for(i=2;i<=NF;i++){ \
+	         if($$i ~ /^ok=/) ok=substr($$i,4); \
+	         else if($$i ~ /^changed=/) chg=substr($$i,9); \
+	         else if($$i ~ /^unreachable=/) unreach=substr($$i,12); \
+	         else if($$i ~ /^failed=/) fail=substr($$i,8); \
+	         else if($$i ~ /^skipped=/) skip=substr($$i,9); \
+	         else if($$i ~ /^rescued=/) res=substr($$i,9); \
+	         else if($$i ~ /^ignored=/) ign=substr($$i,9); \
+	       } \
+	       status=(fail+unreach)>0 ? "failed" : "ok"; \
+	       if(!first) printf(",\n"); first=0; \
+	       printf("  " q "%s" q ": {" q "ok" q ":%d," q "changed" q ":%d," q "unreachable" q ":%d," q "failed" q ":%d," q "skipped" q ":%d," q "rescued" q ":%d," q "ignored" q ":%d," q "status" q ":" q "%s" q "}", \
+	              host, ok, chg, unreach, fail, skip, res, ign, status); \
+	       next \
+	     } \
+	     inrecap && !NF {inrecap=0} \
+	     END{printf "\n}\n"}' "$(APPLY_LOG)" > "$(SUMMARY)"
 	@echo "[L3] ✅ Apply complete"
+	@echo "[L3] Summary:"
+	@sed -n '1,50p' "$(SUMMARY)"
