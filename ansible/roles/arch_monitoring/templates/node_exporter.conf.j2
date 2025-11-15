@@ -1,0 +1,4 @@
+# Managed by Ansible (arch_monitoring)
+# shell-style variables consumed by systemd EnvironmentFile
+ARGS="--web.listen-address={{ arch_monitoring_node_exporter_listen_address }} \
+     --collector.textfile.directory={{ arch_monitoring_textfile_dir }}{% for flag in arch_monitoring_node_exporter_extra_flags %} {{ flag }}{% endfor %}"

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run ansible-pull every {{ arch_services_ansible_pull.interval }}
+
+[Timer]
+OnUnitActiveSec={{ arch_services_ansible_pull.interval }}
+AccuracySec=1m
+Persistent=true
+Unit=ansible-pull.service
+
+[Install]
+WantedBy=timers.target

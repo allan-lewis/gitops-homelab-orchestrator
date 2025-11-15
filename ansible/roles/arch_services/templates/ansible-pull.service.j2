@@ -1,0 +1,16 @@
+[Unit]
+Description=ansible-pull periodic convergence
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ arch_services_ansible_pull.user }}
+WorkingDirectory={{ arch_services_ansible_pull.workdir }}
+ExecStart=/usr/bin/ansible-pull -U {{ arch_services_ansible_pull.repo_url }} -C {{ arch_services_ansible_pull.branch }} {{ arch_services_ansible_pull.playbook }} {{ arch_services_ansible_pull.extra_args }}
+
+# Fail if repo URL is empty
+ExecCondition=/usr/bin/test -n {{ "'" }}{{ arch_services_ansible_pull.repo_url }}{{ "'" }}
+
+[Install]
+WantedBy=multi-user.target

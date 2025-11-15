@@ -1,4 +1,127 @@
 ---
-- name: L3 | arch_services | dry-run placeholder
-  debug:
-    msg: "arch_services: would enable qemu-guest-agent and service units"
+# Install packages (no-op if none)
+- name: Services | Install pacman packages
+  community.general.pacman:
+    name: "{{ arch_services_pacman_packages }}"
+    state: present
+    update_cache: true
+  become: true
+  when: arch_services_pacman_packages | length > 0
+
+# Optional sysctl drop-in
+- name: Services | Ensure sysctl.d directory exists
+  ansible.builtin.file:
+    path: /etc/sysctl.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: arch_services_sysctl | length > 0
+
+- name: Services | Write sysctl drop-in
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-arch-services.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for k, v in arch_services_sysctl.items() -%}
+      {{ k }} = {{ v }}
+      {% endfor -%}
+  become: true
+  when: arch_services_sysctl | length > 0
+
+- name: Services | Apply sysctl (runtime)
+  ansible.builtin.command: sysctl --system
+  changed_when: false
+  become: true
+  when: arch_services_sysctl | length > 0
+
+# Optional: install custom systemd units (templated)
+- name: Services | Install custom systemd units
+  ansible.builtin.template:
+    src: "{{ item.template }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ arch_services_units }}"
+  notify: systemd daemon-reload
+  become: true
+  when: arch_services_units | length > 0
+
+# Enable/start plain services
+- name: Services | Enable & start services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ arch_services_enable }}"
+  become: true
+  when: arch_services_enable | length > 0
+
+# Optional: enable linger for users (idempotent by creating the file)
+- name: Services | Ensure linger directory exists
+  ansible.builtin.file:
+    path: /var/lib/systemd/linger
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: arch_services_linger_users | length > 0
+
+- name: Services | Enable linger for users
+  ansible.builtin.copy:
+    dest: "/var/lib/systemd/linger/{{ item }}"
+    content: ""
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ arch_services_linger_users }}"
+  become: true
+  when: arch_services_linger_users | length > 0
+
+# -------------------------------
+# Optional: ansible-pull scheduler
+# -------------------------------
+- name: ansible-pull | Ensure workdir exists
+  ansible.builtin.file:
+    path: "{{ arch_services_ansible_pull.workdir }}"
+    state: directory
+    owner: "{{ arch_services_ansible_pull.user }}"
+    group: "{{ arch_services_ansible_pull.user }}"
+    mode: "0755"
+  become: true
+  when: arch_services_ansible_pull.enabled
+
+- name: ansible-pull | Install service
+  ansible.builtin.template:
+    src: ansible-pull.service.j2
+    dest: /etc/systemd/system/ansible-pull.service
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: arch_services_ansible_pull.enabled
+  notify: systemd daemon-reload
+
+- name: ansible-pull | Install timer
+  ansible.builtin.template:
+    src: ansible-pull.timer.j2
+    dest: /etc/systemd/system/ansible-pull.timer
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  when: arch_services_ansible_pull.enabled
+  notify: systemd daemon-reload
+
+- name: ansible-pull | Enable & start timer
+  ansible.builtin.systemd:
+    name: ansible-pull.timer
+    enabled: true
+    state: started
+  become: true
+  when: arch_services_ansible_pull.enabled

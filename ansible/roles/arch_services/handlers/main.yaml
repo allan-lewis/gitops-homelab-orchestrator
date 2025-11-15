@@ -1,0 +1,12 @@
+---
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: restart unit
+  ansible.builtin.systemd:
+    name: "{{ arch_services_restart_unit_name }}"
+    state: restarted
+  become: true
+  when: arch_services_restart_unit_name | default("") | length > 0

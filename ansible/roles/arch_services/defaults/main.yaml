@@ -1,0 +1,33 @@
+---
+# 1) Packages from the Arch repos (pacman)
+arch_services_pacman_packages: []
+#  - openssh
+#  - cronie
+#  - ufw
+
+# 2) Plain service enable/start by name (already installed)
+arch_services_enable: []
+#  - sshd
+#  - cronie
+
+# 3) Optional: drop in custom unit/timer files (templated)
+#    Each item: { name: "my.service", dest: "/etc/systemd/system/my.service", template: "my.service.j2", mode: "0644" }
+arch_services_units: []
+
+# 4) Optional: enable linger for users (so user services keep running after logout)
+arch_services_linger_users: []
+#  - "{{ arch_hardening_user | default('lab') }}"
+
+# 5) Optional: simple sysctl drop-in
+arch_services_sysctl: {}   # e.g., { "vm.swappiness": 10, "fs.inotify.max_user_watches": 524288 }
+
+# 6) Optional: ansible-pull (disabled by default)
+arch_services_ansible_pull:
+  enabled: false
+  repo_url: ""                   # e.g., https://github.com/allan-lewis/gitops-homelab-orchestrator.git
+  workdir: "/var/lib/ansible-pull"
+  playbook: "ansible/playbooks/l3_arch.yml"
+  branch: "main"
+  interval: "1h"                 # systemd OnUnitActiveSec
+  extra_args: ""                 # e.g., "-i /etc/ansible/hosts --tags arch_base"
+  user: "{{ arch_hardening_user | default('lab') }}"

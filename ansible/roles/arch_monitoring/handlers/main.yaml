@@ -1,0 +1,11 @@
+---
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: restart node_exporter
+  ansible.builtin.systemd:
+    name: "{{ arch_monitoring_node_exporter_service }}"
+    state: restarted
+  become: true

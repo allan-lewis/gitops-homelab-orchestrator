@@ -1,3 +1,27 @@
 ---
 # Global L3 knobs for Arch
 l3_enable_desktop: false
+
+# Sample services config
+# arch_services_pacman_packages:
+#   - cronie
+
+# arch_services_enable:
+#   - cronie
+
+# arch_services_linger_users:
+#   - "{{ arch_hardening_user | default('lab') }}"
+
+# arch_services_sysctl:
+#   vm.swappiness: 10
+
+# # Optional ansible-pull
+# arch_services_ansible_pull:
+#   enabled: false
+#   repo_url: "https://github.com/allan-lewis/gitops-homelab-orchestrator.git"
+#   workdir: "/var/lib/ansible-pull"
+#   playbook: "ansible/playbooks/l3_arch.yml"
+#   branch: "main"
+#   interval: "1h"
+#   extra_args: ""
+#   user: "{{ arch_hardening_user | default('lab') }}"

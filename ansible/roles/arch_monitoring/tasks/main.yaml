@@ -1,4 +1,74 @@
 ---
-- name: L3 | arch_monitoring | dry-run placeholder
-  debug:
-    msg: "arch_monitoring: would configure exporters/log agents"
+# Install monitoring packages
+- name: Monitoring | Install packages
+  community.general.pacman:
+    name: "{{ arch_monitoring_packages }}"
+    state: present
+    update_cache: true
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+
+# Ensure textfile collector directory exists
+- name: Monitoring | Create textfile collector dir
+  ansible.builtin.file:
+    path: "{{ arch_monitoring_textfile_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+
+# Remove any previous systemd override so we use the packaged unit's ExecStart
+- name: Monitoring | Remove systemd override if present (use packaged unit)
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ arch_monitoring_node_exporter_service }}.d"
+    state: absent
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+  notify: systemd daemon-reload
+
+# Ensure /etc/conf.d (Arch convention) exists
+- name: Monitoring | Ensure /etc/conf.d exists
+  ansible.builtin.file:
+    path: /etc/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+
+# Configure node exporter via conf.d (the packaged unit reads this)
+- name: Monitoring | Configure node_exporter via conf.d (ARGS)
+  ansible.builtin.copy:
+    dest: /etc/conf.d/prometheus-node-exporter
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible (arch_monitoring)
+      ARGS="--web.listen-address={{ arch_monitoring_node_exporter_listen_address }} \
+            --collector.textfile.directory={{ arch_monitoring_textfile_dir }}{% for f in arch_monitoring_node_exporter_extra_flags %} {{ f }}{% endfor %}"
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+  notify: restart node_exporter
+
+# Enable & start with the correct Arch service name
+- name: Monitoring | Enable & start node exporter
+  ansible.builtin.systemd:
+    name: "{{ arch_monitoring_node_exporter_service }}"  # prometheus-node-exporter.service
+    enabled: true
+    state: started
+  become: true
+  when: arch_monitoring_node_exporter_enabled
+
+# Optional firewall opening (ufw)
+- name: Monitoring | Allow 9100/tcp via ufw
+  ansible.builtin.command: ufw allow 9100/tcp
+  register: _ufw_9100
+  changed_when: >
+    _ufw_9100.stdout is search('Rule added') or
+    _ufw_9100.stdout is search('Skipping')
+  when: arch_monitoring_firewall == 'ufw' and arch_monitoring_node_exporter_enabled
+  become: true
