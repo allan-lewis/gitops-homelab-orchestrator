@@ -1,5 +1,5 @@
 ---
-# 1) Install packages (idempotent)
+## INSTALL DEVOPS PACKAGES USING PACMAN
 - name: Ensure DevOps packages are installed (pacman)
   become: true
   community.general.pacman:
@@ -8,24 +8,11 @@
     update_cache: true
   tags: [devops, pkg-install]
 
-# Install AUR packages with paru (non-interactive, idempotent)
-- name: AUR | Install requested packages (if any)
-  kewlfft.aur.aur:
-    use: "{{ arch_aur_helper }}"          # e.g., 'paru' (what you already set up)
-    name: "{{ arch_devops_aur_packages }}" # e.g., [doppler-bin, aws-cli-v2-bin, talosctl-bin]
-    state: present
-    extra_args: "--noconfirm --needed"
-  become: true
-  become_user: "{{ ansible_user }}"      # your AUR build user (as in your arch_aur role)
-  when: arch_devops_aur_packages | length > 0
-
-# 2) Gather package facts (from pacman)
 - name: Gather pacman package facts (remote)
   ansible.builtin.package_facts:
     manager: pacman
   tags: [devops, pkg-facts]
 
-# 3) Assert each requested package is installed
 - name: Assert requested packages are installed (remote)
   ansible.builtin.assert:
     that:
@@ -35,7 +22,6 @@
   loop: "{{ arch_devops_pacman_packages }}"
   tags: [devops, pkg-assert]
 
-# 4) Print versions (from facts) — uses first entry for the package
 - name: Show installed package versions (from pacman facts)
   ansible.builtin.debug:
     msg: >-
@@ -44,3 +30,122 @@
       }}
   loop: "{{ arch_devops_pacman_packages }}"
   tags: [devops, pkg-versions]
+
+## INSTALL AND CONFIGURE DOPPLER
+- name: Download Doppler CLI install script
+  become: true
+  ansible.builtin.get_url:
+    url: "https://cli.doppler.com/install.sh"
+    dest: "/tmp/doppler-install.sh"
+    mode: "0700"
+
+- name: Run Doppler CLI install script
+  become: true
+  ansible.builtin.command:
+    cmd: "sh /tmp/doppler-install.sh"
+  register: doppler_install
+  changed_when: false   # script may reinstall each time; keep run idempotent-ish
+  failed_when: doppler_install.rc != 0
+
+- name: Verify Doppler installation
+  ansible.builtin.command:
+    cmd: "doppler --version"
+  register: doppler_version
+  changed_when: false
+  failed_when: doppler_version.rc != 0
+
+- name: Display Doppler version (first line)
+  ansible.builtin.debug:
+    msg: "doppler: {{ (doppler_version.stdout | default('')).split('\n')[0] }}"
+
+- name: Determine whether a Doppler token is available
+  ansible.builtin.set_fact:
+    doppler_token_available: "{{ doppler_service_token | length > 0 }}"
+
+- name: Configure Doppler service token for scoped directory
+  become: true
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    printf '%s\n' "$DOPPLER_SERVICE_TOKEN" | doppler configure set token --scope "{{ doppler_scope_dir }}"
+  args:
+    executable: /bin/bash
+  environment:
+    DOPPLER_SERVICE_TOKEN: "{{ doppler_service_token }}"
+  changed_when: false
+  when: doppler_token_available
+
+- name: Configure Doppler project/config for scoped directory
+  become: true
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.command:
+    cmd: >
+      doppler setup
+      --project {{ doppler_project }}
+      --config {{ doppler_config }}
+      --scope {{ doppler_scope_dir }}
+      --no-interactive
+  register: doppler_setup
+  changed_when: false  # setup is effectively configuration; safe to treat as no-op
+  failed_when: doppler_setup.rc != 0
+  when: doppler_token_available
+
+## CONFIGURE AWS
+- name: Determine whether AWS credentials are available
+  ansible.builtin.set_fact:
+    aws_creds_available: >-
+      {{ (aws_access_key_id | length > 0) and
+         (aws_secret_access_key | length > 0) }}
+
+- name: Create AWS config dir
+  become: true
+  ansible.builtin.file:
+    path: "{{ aws_cli_home }}/.aws"
+    state: directory
+    owner: "{{ aws_cli_user }}"
+    group: "{{ aws_cli_user }}"
+    mode: "0700"
+
+- name: Ensure AWS config and credentials files exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ aws_cli_home }}/.aws/{{ item }}"
+    state: touch
+    owner: "{{ aws_cli_user }}"
+    group: "{{ aws_cli_user }}"
+    mode: "0600"
+  loop:
+    - config
+    - credentials
+
+- name: Configure default AWS profile in config
+  become: true
+  ansible.builtin.ini_file:
+    path: "{{ aws_cli_home }}/.aws/config"
+    section: default
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    owner: "{{ aws_cli_user }}"
+    group: "{{ aws_cli_user }}"
+    mode: "0600"
+  loop:
+    - { key: "region",    value: "{{ aws_default_region }}" }
+    - { key: "output",    value: "json" }
+    - { key: "cli_pager", value: "" } 
+
+- name: Configure default AWS credentials from env (if available)
+  become: true
+  no_log: true
+  ansible.builtin.ini_file:
+    path: "{{ aws_cli_home }}/.aws/credentials"
+    section: default
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    owner: "{{ aws_cli_user }}"
+    group: "{{ aws_cli_user }}"
+    mode: "0600"
+  loop:
+    - { key: "aws_access_key_id",     value: "{{ aws_access_key_id }}" }
+    - { key: "aws_secret_access_key", value: "{{ aws_secret_access_key }}" }
+  when: aws_creds_available
+

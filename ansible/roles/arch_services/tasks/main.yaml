@@ -125,3 +125,15 @@
     state: started
   become: true
   when: arch_services_ansible_pull.enabled
+
+- name: Ensure resolv.conf contains sane public DNS servers
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible - arch_services role
+      nameserver 1.1.1.1
+      nameserver 8.8.8.8

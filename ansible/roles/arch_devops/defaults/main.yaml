@@ -3,10 +3,19 @@ arch_devops_pacman_packages:
   - python-kubernetes
   - terraform
   - kubectl
+  - aws-cli-v2
+  - talosctl
+  - helm
+  # - starship - put this in dotfiles role
 
-arch_devops_aur_packages:
-- doppler-bin
-- aws-cli-v2-bin
-- talosctl-bin
+# Typically in role defaults or vars
+aws_cli_user: "{{ ansible_user }}"
+aws_cli_home: "/home/{{ aws_cli_user }}"
+aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('', true) }}"
+aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('', true) }}"
+aws_default_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('us-east-1', true) }}"
 
-arch_aur_helper: paru
+doppler_service_token: "{{ lookup('env', 'DOPPLER_SERVICE_TOKEN') | default('', true) }}"
+doppler_scope_dir: "/home/{{ ansible_user }}"  # example
+doppler_project: "default" 
+doppler_config: "dev"

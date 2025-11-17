@@ -15,4 +15,4 @@ arch_aur_packages:
 #  - slack-desktop
 
 arch_aur_known_pgp_keys:
-  - "7C20ADCD35D9797789B6BCC046D62DD9F1DE636E"
+  - "7C20ADCD35D9797789B6BCC046D62DD9F1DE636E" # neofetch
