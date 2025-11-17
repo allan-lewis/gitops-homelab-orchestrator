@@ -6,10 +6,11 @@
   become: true
 
   roles:
-    - { role: arch_base,       tags: ["arch_base"] }
-    - { role: arch_hardening,  tags: ["arch_hardening"] }
-    - { role: arch_aur,        tags: ["arch_aur"] }
-    - { role: arch_services,   tags: ["arch_services"] }
-    - { role: arch_monitoring, tags: ["arch_monitoring"] }
+    # - { role: arch_base,       tags: ["arch_base"] }
+    # - { role: arch_hardening,  tags: ["arch_hardening"] }
+    # - { role: arch_aur,        tags: ["arch_aur"] }
+    # - { role: arch_services,   tags: ["arch_services"] }
+    # - { role: arch_monitoring, tags: ["arch_monitoring"] }
     # Optional desktop layer; toggle via group_vars (default false)
-    - { role: arch_desktop,    when: l3_enable_desktop | default(false), tags: ["arch_desktop"] }
+    # - { role: arch_desktop,    when: l3_enable_desktop | default(false), tags: ["arch_desktop"] }
+    - { role: arch_devops,     tags: ["arch_devops"] }

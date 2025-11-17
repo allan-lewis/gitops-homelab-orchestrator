@@ -1,0 +1,46 @@
+---
+# 1) Install packages (idempotent)
+- name: Ensure DevOps packages are installed (pacman)
+  become: true
+  community.general.pacman:
+    name: "{{ arch_devops_pacman_packages }}"
+    state: present
+    update_cache: true
+  tags: [devops, pkg-install]
+
+# Install AUR packages with paru (non-interactive, idempotent)
+- name: AUR | Install requested packages (if any)
+  kewlfft.aur.aur:
+    use: "{{ arch_aur_helper }}"          # e.g., 'paru' (what you already set up)
+    name: "{{ arch_devops_aur_packages }}" # e.g., [doppler-bin, aws-cli-v2-bin, talosctl-bin]
+    state: present
+    extra_args: "--noconfirm --needed"
+  become: true
+  become_user: "{{ ansible_user }}"      # your AUR build user (as in your arch_aur role)
+  when: arch_devops_aur_packages | length > 0
+
+# 2) Gather package facts (from pacman)
+- name: Gather pacman package facts (remote)
+  ansible.builtin.package_facts:
+    manager: pacman
+  tags: [devops, pkg-facts]
+
+# 3) Assert each requested package is installed
+- name: Assert requested packages are installed (remote)
+  ansible.builtin.assert:
+    that:
+      - item in ansible_facts.packages
+    fail_msg: "{{ item }} is NOT installed on remote host"
+    success_msg: "{{ item }} is installed on remote host"
+  loop: "{{ arch_devops_pacman_packages }}"
+  tags: [devops, pkg-assert]
+
+# 4) Print versions (from facts) — uses first entry for the package
+- name: Show installed package versions (from pacman facts)
+  ansible.builtin.debug:
+    msg: >-
+      {{ item }}: {{
+        (ansible_facts.packages[item] | first).version
+      }}
+  loop: "{{ arch_devops_pacman_packages }}"
+  tags: [devops, pkg-versions]
