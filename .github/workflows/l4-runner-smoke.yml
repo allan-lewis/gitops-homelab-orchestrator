@@ -1,0 +1,58 @@
+name: L4 Runner Smoke Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    steps:
+      - name: Show runner identity
+        run: |
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "OS release:"
+          cat /etc/os-release || echo "no /etc/os-release"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner arch: $RUNNER_ARCH"
+          echo "Runner name: $RUNNER_NAME"
+
+      - name: Check network connectivity
+        run: |
+          echo "Testing connectivity..."
+          ping -c 3 1.1.1.1 || echo "Could not reach 1.1.1.1"
+          ping -c 3 8.8.8.8 || echo "Could not reach 8.8.8.8"
+
+      - name: Check Proxmox reachability (adjust host/IP)
+        run: |
+          # Replace these with your actual Proxmox hostnames/IPs
+          for host in polaris 192.168.86.10; do
+            echo "Pinging $host..."
+            if ping -c 3 "$host"; then
+              echo "OK: $host reachable"
+              exit 0
+            fi
+          done
+          echo "WARNING: No Proxmox host responded to ping"
+          # Don't fail the whole job yet; this is a smoke test
+          exit 0
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Show repo contents
+        run: |
+          echo "PWD: $(pwd)"
+          echo "Top-level files:"
+          ls -la
+          echo
+          echo "Make targets (if Makefile exists):"
+          if [ -f Makefile ]; then
+            make -n help || make help || echo "No 'help' target"
+          else
+            echo "No Makefile in this directory"
+          fi
