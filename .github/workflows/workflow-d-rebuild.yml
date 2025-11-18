@@ -9,7 +9,7 @@ on:
         default: "no"
 
 jobs:
-  rebuild-devops-host:
+  rebuild:
     environment: lab
     runs-on:
       - self-hosted

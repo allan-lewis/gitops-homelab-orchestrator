@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  l4-runway:
+  runway:
     environment: lab
     runs-on:
       - self-hosted
