@@ -35,6 +35,18 @@ jobs:
             echo "No Makefile in repo root"
           fi
 
+      - name: Ensure Ansible is installed
+        run: |
+          set -e
+          if ! command -v ansible >/dev/null 2>&1; then
+            echo "Ansible not found, installing..."
+            sudo apt update
+            sudo apt install -y ansible
+          else
+            echo "Ansible already installed:"
+            ansible --version
+          fi
+
       - name: Run L0 runway
         run: |
           set -euxo pipefail
