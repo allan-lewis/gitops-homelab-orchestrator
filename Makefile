@@ -40,7 +40,7 @@ help: ## Show targets
 clean: ## Remove all artifacts
 	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts"
 
-l0-runway: ## Run the L0 runway locally (via Ansible), with Doppler env
+l0-runway: ## Run the L0 runway locally (via Ansible)
 	@$(RUN) bash -lc "set -euo pipefail; \
 	  mkdir -p artifacts; \
 	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
