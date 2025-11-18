@@ -17,7 +17,7 @@ jobs:
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE: ${{ secrets.PVE_NODE }}
       # PVE_STORAGE_ISO: ${{ secrets.PVE_STORAGE_ISO }}
-      # PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
+      PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
       # PVE_BRIDGE: ${{ secrets.PVE_BRIDGE }}
       # L0_MIN_FREE_GIB_ISO: ${{ vars.L0_MIN_FREE_GIB_ISO || '4' }}
       # L0_MIN_FREE_PCT_VM:  ${{ vars.L0_MIN_FREE_PCT_VM  || '10' }}
