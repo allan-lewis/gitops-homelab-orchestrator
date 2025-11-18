@@ -26,3 +26,19 @@ jobs:
           set -e
           echo "Using ansible from: $(command -v ansible)"
           ansible --version
+
+      - name: Configure SSH key for Ansible
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          # Write private key from GitHub environment secret
+          cat << 'EOF' > "$HOME/.ssh/id_ed25519"
+          ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          EOF
+
+          chmod 600 "$HOME/.ssh/id_ed25519"
+
+          echo "SSH key configured at $HOME/.ssh/id_ed25519"
