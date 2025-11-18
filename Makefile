@@ -49,24 +49,27 @@ l0-runway: ## Run the L0 runway (Proxmox validations via Ansible)
 	  ansible-playbook ansible/playbooks/l0_runway.yml'
 
 l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
-	@$(RUN) bash -lc ' \
-	  cd terraform/l2 && \
-	  echo "Using Terraform in $$(pwd)"; \
-	  # Ensure Terraform is initialized
-	  terraform init -input=false -upgrade=false >/dev/null; \
-	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST"; \
-	  export TF_VAR_pm_token_id="$$PM_TOKEN_ID"; \
-	  export TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET"; \
-	  export TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY"; \
-	  export TF_VAR_l1_manifest_json="$$(jq -c '.' manifests/arch_devops/template-manifest.json)"; \
+	@cd terraform/l2 && \
+	  echo "Using Terraform in $$(pwd)" && \
+	  $(RUN) terraform init -input=false -upgrade=false >/dev/null && \
 	  if [ "$${APPLY:-0}" = "1" ]; then \
 	    echo "Applying Terraform destroy (APPLY=1)"; \
-	    terraform apply -destroy -auto-approve; \
+	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
+	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
+	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
+	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
+	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
+	      $(RUN) terraform apply -destroy -auto-approve; \
 	  else \
 	    echo "Terraform destroy plan only (no changes applied)."; \
 	    echo "Set APPLY=1 to actually destroy."; \
-	    terraform plan -destroy; \
-	  fi'
+	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
+	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
+	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
+	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
+	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
+	      $(RUN) terraform plan -destroy; \
+	  fi
 
 l3-apply: ## Converge Arch DevOps host (L3 via Ansible)
 	@$(RUN) bash -lc 'ansible-playbook \

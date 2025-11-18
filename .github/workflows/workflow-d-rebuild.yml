@@ -84,6 +84,17 @@ jobs:
           make l0-runway
 
       #####################################################################
+      # Step 2 — Destroy existing DevOps VM via Terraform (L2)
+      #####################################################################
+      - name: Step 2 - Destroy existing DevOps VM (Terraform)
+        if: ${{ success() }}  # run only if confirmation + L0 succeeded
+        env:
+          APPLY: "0"    # signal real destruction
+        run: |
+          echo "=== Destroying DevOps VM (Terraform APPLY=1) ==="
+          make l2-destroy
+
+      #####################################################################
       # TODO: Step 2 — Delete existing DevOps VM
       # TODO: Step 3 — Rebuild DevOps VM using manifests/arch_devops/template-manifest.json
       # TODO: Step 4 — Optional smoke check
