@@ -1,0 +1,92 @@
+name: Workflow D - Full Rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_rebuild:
+        description: "Type 'yes' to confirm destructive rebuild (default: no)"
+        required: false
+        default: "no"
+
+jobs:
+  rebuild-devops-host:
+    environment: lab
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    env:
+      # Proxmox connection (L0 and later L2/L2-delete logic)
+      PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE: ${{ secrets.PVE_NODE }}
+      PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
+
+      # Ansible behavior defaults
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+
+    steps:
+      #####################################################################
+      # Step 0 — User Confirmation Gate
+      #####################################################################
+
+      - name: Confirm destructive rebuild
+        run: |
+          echo "User confirmation: '${{ github.event.inputs.confirm_rebuild }}'"
+          if [ "${{ github.event.inputs.confirm_rebuild }}" != "yes" ]; then
+            echo "❌ Rebuild not confirmed. Exiting safely."
+            exit 1
+          fi
+          echo "✔️ Rebuild confirmed. Proceeding..."
+
+      #####################################################################
+      # Repo + Environment Prep
+      #####################################################################
+
+      - name: Identify runner
+        run: |
+          echo "Runner: $RUNNER_NAME"
+          echo "Host: $(hostname)"
+          echo "User: $(whoami)"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Ansible is available
+        run: |
+          echo "ansible at: $(command -v ansible)"
+          ansible --version
+
+      - name: Configure SSH key for future Ansible/L3 use
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          cat << 'EOF' > "$HOME/.ssh/id_ed25519"
+          ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          EOF
+
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          echo "SSH key configured."
+
+      #####################################################################
+      # Step 1 — L0 Runway (Proxmox sanity checks)
+      #####################################################################
+
+      - name: L0 Runway - Proxmox validations
+        id: l0
+        run: |
+          echo "=== Running L0 runway (Proxmox checks) ==="
+          make l0-runway
+
+      #####################################################################
+      # TODO: Step 2 — Delete existing DevOps VM
+      # TODO: Step 3 — Rebuild DevOps VM using manifests/arch_devops/template-manifest.json
+      # TODO: Step 4 — Optional smoke check
+      # TODO: Step 5 — L3 converge
+      # TODO: Step 6 — Upload L2 + L3 artifacts
+      #####################################################################

@@ -89,4 +89,5 @@ cache/
 .Trashes
 Icon?
 
+!template-manifest.json
 !archinstall_config.json
