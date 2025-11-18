@@ -1,4 +1,4 @@
-name: L4A Runway
+name: Workflow A - Runway
 
 on:
   workflow_dispatch:
@@ -16,13 +16,7 @@ jobs:
       PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE: ${{ secrets.PVE_NODE }}
-      # PVE_STORAGE_ISO: ${{ secrets.PVE_STORAGE_ISO }}
       PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
-      # PVE_BRIDGE: ${{ secrets.PVE_BRIDGE }}
-      # L0_MIN_FREE_GIB_ISO: ${{ vars.L0_MIN_FREE_GIB_ISO || '4' }}
-      # L0_MIN_FREE_PCT_VM:  ${{ vars.L0_MIN_FREE_PCT_VM  || '10' }}
-      # TEMPLATE_PREFIX:      ${{ vars.TEMPLATE_PREFIX      || 'arch-' }}
-      # TEMPLATE_RETENTION:   ${{ vars.TEMPLATE_RETENTION   || '3' }}
 
     steps:
       - name: Show runner identity
@@ -48,10 +42,6 @@ jobs:
           set -e
           echo "Using ansible from: $(command -v ansible)"
           ansible --version
-
-      - name: Debug env
-        run: |
-          env | sort | grep -E 'PVE_|PM_TOKEN|L0|TEMPLATE'
 
       - name: Run L0 runway
         run: |
