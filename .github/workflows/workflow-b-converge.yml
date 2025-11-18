@@ -42,3 +42,12 @@ jobs:
           chmod 600 "$HOME/.ssh/id_ed25519"
 
           echo "SSH key configured at $HOME/.ssh/id_ed25519"
+
+      - name: Run L3 convergence
+        env:
+          ANSIBLE_PRIVATE_KEY_FILE: "$HOME/.ssh/id_ed25519"
+        run: |
+          set -euxo pipefail
+          # Assumes make l3-apply uses:
+          #   -i ansible/inventories/arch_devops/hosts.ini
+          make l3-apply

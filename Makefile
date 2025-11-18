@@ -26,6 +26,7 @@ endif
 export RUN
 
 export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
+export ANSIBLE_HOST_KEY_CHECKING = False
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Load .env if present
@@ -34,16 +35,20 @@ include .env
 export
 endif
 
+.PHONY: help clean l0-runway l3-apply
+
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 clean: ## Remove all artifacts
-	@$(RUN) bash -lc "set -euo pipefail; rm -rf artifacts"
+	@$(RUN) bash -lc 'rm -rf artifacts'
 
-l0-runway: ## Run the L0 runway locally (via Ansible)
-	@$(RUN) bash -lc "set -euo pipefail; \
+l0-runway: ## Run the L0 runway (Proxmox validations via Ansible)
+	@$(RUN) bash -lc ' \
 	  mkdir -p artifacts; \
-	  : \"$$\{PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST\}\"; \
-	  : \"$$\{PM_TOKEN_ID:?Missing PM_TOKEN_ID\}\"; \
-	  : \"$$\{PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET\}\"; \
-	  ansible-playbook ansible/playbooks/l0_runway.yml"
+	  ansible-playbook ansible/playbooks/l0_runway.yml'
+
+l3-apply: ## Converge Arch DevOps host (L3 via Ansible)
+	@$(RUN) bash -lc 'ansible-playbook \
+	  -i ansible/inventories/arch_devops/hosts.ini \
+	  ansible/playbooks/l3_arch.yml'
