@@ -1,0 +1,28 @@
+name: Workflow B - Converge
+
+on:
+  workflow_dispatch:
+
+jobs:
+  l4-converge:
+    environment: lab
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    steps:
+      - name: Show runner identity
+        run: |
+          echo "Runner name: $RUNNER_NAME"
+          echo "Host: $(hostname)"
+          echo "User: $(whoami)"
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Verify Ansible is available
+        run: |
+          set -e
+          echo "Using ansible from: $(command -v ansible)"
+          ansible --version
