@@ -99,11 +99,11 @@ jobs:
           cp -f "$f" artifacts/l1_images/manifest.json
           echo "manifest_path=artifacts/l1_images/manifest.json" >> "$GITHUB_OUTPUT"
 
-      - name: Install prerequisites
-        run: |
-          set -euo pipefail
-          sudo apt-get update -y
-          sudo apt-get install -y jq
+      # - name: Install prerequisites
+      #   run: |
+      #     set -euo pipefail
+      #     sudo apt-get update -y
+      #     sudo apt-get install -y jq
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
