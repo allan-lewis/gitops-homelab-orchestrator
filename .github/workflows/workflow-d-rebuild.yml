@@ -54,8 +54,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify Ansible is available
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Verify Terraform & Ansible
         run: |
+          echo "terraform at: $(command -v terraform)"
+          terraform version
           echo "ansible at: $(command -v ansible)"
           ansible --version
 
