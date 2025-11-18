@@ -100,8 +100,18 @@ jobs:
           echo "=== Destroying DevOps VM (Terraform APPLY=1) ==="
           make l2-destroy
 
+      #################################################################
+      # Step 3 — Rebuild DevOps VM from template (Terraform L2)
+      #################################################################
+      - name: Step 3 - Rebuild DevOps VM from template (Terraform)
+        if: ${{ success() }}  # only if everything so far succeeded
+        env:
+          APPLY: "1"
+        run: |
+          echo "=== Rebuilding DevOps VM from template (Terraform APPLY=1) ==="
+          make l2-apply-devops
+
       #####################################################################
-      # TODO: Step 3 — Rebuild DevOps VM using manifests/arch_devops/template-manifest.json
       # TODO: Step 4 — Optional smoke check
       # TODO: Step 5 — L3 converge
       # TODO: Step 6 — Upload L2 + L3 artifacts
