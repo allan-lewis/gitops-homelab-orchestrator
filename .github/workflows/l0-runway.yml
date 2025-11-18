@@ -1,4 +1,4 @@
-name: L4.00 Runway
+name: L4A Runway
 
 on:
   workflow_dispatch:
