@@ -23,6 +23,7 @@ jobs:
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE: ${{ secrets.PVE_NODE }}
       PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
+      TF_VAR_PROXMOX_VM_PUBLIC_KEY: ${{ secrets.TF_VAR_PROXMOX_VM_PUBLIC_KEY }}
 
       # Ansible behavior defaults
       ANSIBLE_HOST_KEY_CHECKING: "False"
@@ -100,7 +101,6 @@ jobs:
           make l2-destroy
 
       #####################################################################
-      # TODO: Step 2 — Delete existing DevOps VM
       # TODO: Step 3 — Rebuild DevOps VM using manifests/arch_devops/template-manifest.json
       # TODO: Step 4 — Optional smoke check
       # TODO: Step 5 — L3 converge
