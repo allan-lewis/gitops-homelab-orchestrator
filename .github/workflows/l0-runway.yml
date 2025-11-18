@@ -1,54 +1,41 @@
-name: L0 Proxmox Runway
+name: L4.00 Runway
 
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
-concurrency:
-  group: l0-runway-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  l0:
-    runs-on: ubuntu-latest
-    environment: lab
-    timeout-minutes: 10
+  l4-runway:
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
 
     env:
       PVE_ACCESS_HOST: ${{ secrets.PVE_ACCESS_HOST }}
       PM_TOKEN_ID: ${{ secrets.PM_TOKEN_ID }}
       PM_TOKEN_SECRET: ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE: ${{ secrets.PVE_NODE }}
-      PVE_STORAGE_ISO: ${{ secrets.PVE_STORAGE_ISO }}
-      PVE_STORAGE_VM: ${{ secrets.PVE_STORAGE_VM }}
-      PVE_BRIDGE: ${{ secrets.PVE_BRIDGE }}
-      L0_MIN_FREE_GIB_ISO: ${{ vars.L0_MIN_FREE_GIB_ISO || '4' }}
-      L0_MIN_FREE_PCT_VM:  ${{ vars.L0_MIN_FREE_PCT_VM  || '10' }}
-      TEMPLATE_PREFIX:      ${{ vars.TEMPLATE_PREFIX      || 'arch-' }}
-      TEMPLATE_RETENTION:   ${{ vars.TEMPLATE_RETENTION   || '3' }}
 
     steps:
-      - name: Checkout
+      - name: Show runner identity
+        run: |
+          echo "Runner name: $RUNNER_NAME"
+          echo "Host: $(hostname)"
+          echo "User: $(whoami)"
+
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Ansible
+      - name: Show Make targets (optional)
         run: |
-          set -euo pipefail
-          sudo apt-get update -y
-          sudo apt-get install -y ansible jq
+          if [ -f Makefile ]; then
+            echo "Make targets:"
+            make -n help || true
+          else
+            echo "No Makefile in repo root"
+          fi
 
       - name: Run L0 runway
         run: |
-          set -euo pipefail
-          ansible-playbook ansible/playbooks/l0_runway.yml
-
-      - name: Upload L0 artifacts (if present)
-        if: ${{ hashFiles('artifacts/**') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: l0-runway-artifacts
-          path: artifacts
-          if-no-files-found: ignore
-          retention-days: 14
+          set -euxo pipefail
+          make l0-runway
