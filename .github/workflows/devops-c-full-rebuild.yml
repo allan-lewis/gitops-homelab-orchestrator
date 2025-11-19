@@ -2,6 +2,11 @@ name: devops c - full rebuild
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_rebuild:
+        description: "Type 'yes' to confirm destructive rebuild (default: no)"
+        required: false
+        default: "no"
 
 permissions:
   contents: read
@@ -40,9 +45,22 @@ jobs:
           echo "Host: $(hostname)"
           echo "User: $(whoami)"
 
+      ## make the user confirm destructive actions
+      - name: Confirm destructive rebuild
+        run: |
+          echo "User confirmation: '${{ github.event.inputs.confirm_rebuild }}'"
+          if [ "${{ github.event.inputs.confirm_rebuild }}" != "yes" ]; then
+            echo "❌ Rebuild not confirmed. Exiting safely."
+            exit 1
+          fi
+          echo "✔️ Rebuild confirmed. Proceeding..."
+
       ## prepare the local runner environment
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Configure SSH key for Ansible
         run: |
@@ -63,3 +81,19 @@ jobs:
         run: |
           set -euo pipefail
           make l0-runway
+
+      ## tear down existing infrasctructure
+      - name: Destroy existing DevOps VM(s) (Terraform)
+        if: ${{ success() }}
+        env:
+          APPLY: "1" # force real destruction
+        run: |
+          make l2-destroy
+
+      ## re-build vms from templates
+      - name: Rebuild VM(s) from template(s) (Terraform)
+        if: ${{ success() }} 
+        env:
+          APPLY: "1" # force real destruction
+        run: |
+          make l2-apply
