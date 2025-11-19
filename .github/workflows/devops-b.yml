@@ -70,7 +70,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: devops-b-artifacts
+          name: template-builder-artifacts
           path: artifacts/l1_images
           retention-days: 28
           if-no-files-found: warn
