@@ -39,8 +39,24 @@ jobs:
       - name: Setup Packer
         uses: hashicorp/setup-packer@v3
 
-      - name: L1 init and validate
+      ## build template using packer and export manifest
+      - name: Packer init and validate
         run: |
           set -euo pipefail
           make l1-init
           make l1-validate
+
+      - name: Packer template build
+        run: |
+          set -euo pipefail
+          make l1-build
+
+      - name: L1 manifest
+        run: |
+          set -euo pipefail
+          make l1-manifest
+
+      - name: List artifacts
+        run: ls -lah artifacts/l1_images
+
+      ## create and upload manifest artifact
