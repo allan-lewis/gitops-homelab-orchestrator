@@ -38,3 +38,9 @@ jobs:
 
       - name: Setup Packer
         uses: hashicorp/setup-packer@v3
+
+      - name: L1 init and validate
+        run: |
+          set -euo pipefail
+          make l1-init
+          make l1-validate
