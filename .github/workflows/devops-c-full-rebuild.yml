@@ -105,3 +105,24 @@ jobs:
           ANSIBLE_PRIVATE_KEY_FILE: "$HOME/.ssh/id_ed25519"
         run: |
           make l4-smoke
+
+      ## use ansible to update vms
+      - name: Converge VMs
+        if: ${{ success() }}
+        env:
+          ANSIBLE_PRIVATE_KEY_FILE: "$HOME/.ssh/id_ed25519"
+        run: |
+          make l3-apply
+
+      ## Upload build artifacts
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-rebuild-artifacts
+          path: |
+            artifacts/l2_inventory/inventory.json
+            artifacts/l2_inventory/inventory.yaml
+            artifacts/l3/l3_summary.json
+          retention-days: 28
+          if-no-files-found: error
