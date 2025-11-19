@@ -68,11 +68,28 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	  AUTH="Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}"; \
 	  HOST="$${PVE_ACCESS_HOST%/}/api2/json"; \
 	  raw_out="artifacts/l1_images/qemu-$${vmid}-config.json"; \
-	  norm_out="artifacts/l1_images/manifest.json"; \
+	  norm_out="artifacts/l1_images/template-manifest.json"; \
 	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$raw_out and $$norm_out"; \
 	  resp="$$(curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config")"; \
 	  echo "$$resp" | jq -S . > "$$raw_out"; \
-	  echo "$$resp" | jq -S --arg vmid "$$vmid" --arg node "$${PVE_NODE}" "{vmid:(\$$vmid|tonumber), node:\$$node} + .data" > "$$norm_out"; \
+	  ctime="$$(echo "$$resp" | jq -r '\''.data.meta | split(",")[] | select(startswith("ctime=")) | split("=")[1]'\'' )"; \
+	  created_at=""; \
+	  if created_at="$$(date -u -r "$$ctime" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null)"; then :; else \
+	    created_at="$$(date -u -d "@$$ctime" "+%Y-%m-%dT%H:%M:%SZ")"; \
+	  fi; \
+	  echo "$$resp" | jq -S \
+	    --arg vmid "$$vmid" \
+	    --arg node "$${PVE_NODE}" \
+	    --arg created_at "$$created_at" \
+	    '\''.data | { \
+	      name: .name, \
+	      node: $node, \
+	      vmid: ($vmid | tonumber), \
+	      storage: (.scsi0 // .ide1 | split(":")[0]), \
+	      created_at: $created_at, \
+	      description: .description \
+	    }'\'' \
+	    > "$$norm_out"; \
 	  echo "Wrote $$raw_out"; \
 	  echo "Wrote $$norm_out"'
 
