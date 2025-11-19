@@ -35,7 +35,7 @@ include .env
 export
 endif
 
-.PHONY: help clean l0-runway l2-destroy l3-apply
+.PHONY: help clean l0-runway l2-destroy l2-apply l3-apply l4-smoke
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -99,6 +99,32 @@ l3-apply: ## Converge Arch DevOps host (L3 via Ansible)
 	@$(RUN) bash -lc 'ansible-playbook \
 	  -i ansible/inventories/arch_devops/hosts.ini \
 	  ansible/playbooks/l3_arch.yml'
+
+
+l4-smoke: ## Quick smoke test for the rebuilt DevOps host (with retry)
+	@echo "=== Running L4 Smoke Test (Ansible ping + uptime) ==="
+	@set -euo pipefail; \
+	  INI="ansible/inventories/arch_devops/hosts.ini"; \
+	  echo "Using inventory: $$INI"; \
+	  RETRIES=10; \
+	  DELAY=6; \
+	  COUNT=1; \
+	  echo "--- Waiting for SSH connectivity (retries: $$RETRIES, delay: $$DELAY sec) ---"; \
+	  until ansible -i "$$INI" all -m ping >/dev/null 2>&1; do \
+	    if [ $$COUNT -ge $$RETRIES ]; then \
+	      echo "❌ Smoke test failed: host not reachable after $$RETRIES attempts."; \
+	      exit 1; \
+	    fi; \
+	    echo "SSH not ready yet (attempt $$COUNT/$$RETRIES). Retrying in $$DELAY seconds..."; \
+	    sleep $$DELAY; \
+	    COUNT=$$((COUNT+1)); \
+	  done; \
+	  echo "✔️ Host reachable! Running full smoke tests..."; \
+	  echo "--- Ansible ping ---"; \
+	  ansible -i "$$INI" all -m ping; \
+	  echo "--- uptime ---"; \
+	  ansible -i "$$INI" all -a "uptime"; \
+	  echo "=== Smoke test complete ==="
 
 ## TODO: these are legacy and need to be removed/re-factored
 l1-fmt: ## Packer format for L1 (Arch)
