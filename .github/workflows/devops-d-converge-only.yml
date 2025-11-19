@@ -62,3 +62,21 @@ jobs:
         run: |
           set -euo pipefail
           make l0-runway
+
+      ## use ansible to update vms
+      - name: Converge VMs
+        if: ${{ success() }}
+        env:
+          ANSIBLE_PRIVATE_KEY_FILE: "$HOME/.ssh/id_ed25519"
+        run: |
+          make l3-apply
+
+      ## Upload build artifacts
+      - name: Upload artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: converge-only-artifacts
+          path: artifacts/l3/l3_summary.json
+          retention-days: 28
+          if-no-files-found: error
