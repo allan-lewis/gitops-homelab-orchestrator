@@ -8,7 +8,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: gitops-homelab-orchestrator-${{ github.ref }}
+  group: devops-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -27,12 +27,18 @@ jobs:
       PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE:          ${{ secrets.PVE_NODE }}
       PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
-
       ## disable doppler in makefile
       CI: "true"
       DOPPLER: "0"
 
     steps:
+      ## log local runner information
+      - name: Identify runner
+        run: |
+          echo "Runner: $RUNNER_NAME"
+          echo "Host: $(hostname)"
+          echo "User: $(whoami)"
+
       ## prepare the local runner environment
       - name: Checkout
         uses: actions/checkout@v4
