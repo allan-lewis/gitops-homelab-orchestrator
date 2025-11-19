@@ -26,6 +26,7 @@ jobs:
       PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
       PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
       PVE_NODE:          ${{ secrets.PVE_NODE }}
+      PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
 
       ## disable doppler in makefile
       CI: "true"
