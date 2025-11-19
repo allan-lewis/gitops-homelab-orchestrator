@@ -82,8 +82,8 @@ jobs:
           set -euo pipefail
           make l0-runway
 
-      ## tear down existing infrasctructure
-      - name: Destroy existing DevOps VM(s) (Terraform)
+      ## tear down existing infrastructure
+      - name: Destroy existing DevOps VMs (Terraform)
         if: ${{ success() }}
         env:
           APPLY: "1" # force real destruction
@@ -91,10 +91,10 @@ jobs:
           make l2-destroy
 
       ## re-build vms from templates
-      - name: Rebuild VM(s) from template(s) (Terraform)
+      - name: Rebuild VMs from templates (Terraform)
         if: ${{ success() }} 
         env:
-          APPLY: "1" # force real destruction
+          APPLY: "1" # force real apply
         run: |
           make l2-apply
 
