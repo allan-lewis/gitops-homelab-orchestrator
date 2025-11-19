@@ -1,0 +1,40 @@
+name: devops b - template builder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: gitops-homelab-orchestrator-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  devops-b:
+    timeout-minutes: 20
+    environment: lab
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    env:
+      ## required for proxmox host access
+      PVE_ACCESS_HOST:   ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE:          ${{ secrets.PVE_NODE }}
+
+      ## disable doppler in makefile
+      CI: "true"
+      DOPPLER: "0"
+
+    steps:
+      ## prepare the local runner environment
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@v3
