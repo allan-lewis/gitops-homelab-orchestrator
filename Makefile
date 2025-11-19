@@ -81,14 +81,7 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	    --arg vmid "$$vmid" \
 	    --arg node "$${PVE_NODE}" \
 	    --arg created_at "$$created_at" \
-	    '\''.data | { \
-	      name: .name, \
-	      node: $$node, \
-	      vmid: ($$vmid | tonumber), \
-	      storage: (.scsi0 // .ide1 | split(":")[0]), \
-	      created_at: $$created_at, \
-	      description: .description \
-	    }'\'' \
+	    '\''.data | {name: .name, node: $$node, vmid: ($$vmid | tonumber), storage: (.scsi0 // .ide1 | split(":")[0]), created_at: $$created_at, description: .description}'\'' \
 	    > "$$norm_out"; \
 	  echo "Wrote $$raw_out"; \
 	  echo "Wrote $$norm_out"'
