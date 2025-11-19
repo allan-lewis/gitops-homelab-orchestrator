@@ -97,3 +97,11 @@ jobs:
           APPLY: "1" # force real destruction
         run: |
           make l2-apply
+
+      ## ping hosts to ensure reachability
+      - name: Smoke test VMs (Ansible ping + uptime)
+        if: ${{ success() }}
+        env:
+          ANSIBLE_PRIVATE_KEY_FILE: "$HOME/.ssh/id_ed25519"
+        run: |
+          make l4-smoke
