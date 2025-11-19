@@ -133,6 +133,16 @@ jobs:
           echo "=== Running L3 converge (make l3-apply) ==="
           make l3-apply
 
-      #####################################################################
-      # TODO: Step 6 — Upload L2 + L3 artifacts
-      #####################################################################
+      #################################################################
+      # Step 6 — Upload L2 + L3 artifacts
+      #################################################################
+      - name: Step 6 - Upload rebuild artifacts
+        if: ${{ success() }}  # only if L3 completed successfully
+        uses: actions/upload-artifact@v4
+        with:
+          name: devops-rebuild-artifacts
+          path: |
+            artifacts/l2_inventory/inventory.json
+            artifacts/l2_inventory/inventory.yaml
+            artifacts/l3/l3_summary.json
+          if-no-files-found: ignore
