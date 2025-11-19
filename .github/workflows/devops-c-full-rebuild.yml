@@ -22,11 +22,12 @@ jobs:
 
     env:
       ## required for proxmox host access
-      PVE_ACCESS_HOST:   ${{ secrets.PVE_ACCESS_HOST }}
-      PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
-      PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
-      PVE_NODE:          ${{ secrets.PVE_NODE }}
-      PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
+      PVE_ACCESS_HOST:                ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID:                    ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET:                ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE:                       ${{ secrets.PVE_NODE }}
+      PVE_STORAGE_VM:                 ${{ secrets.PVE_STORAGE_VM }}
+      TF_VAR_PROXMOX_VM_PUBLIC_KEY:   ${{ secrets.TF_VAR_PROXMOX_VM_PUBLIC_KEY }}
       ## disable doppler in makefile
       CI: "true"
       DOPPLER: "0"
@@ -42,3 +43,23 @@ jobs:
       ## prepare the local runner environment
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure SSH key for Ansible
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+
+          cat << 'EOF' > "$HOME/.ssh/id_ed25519"
+          ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+          EOF
+
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          echo "SSH key configured."
+
+      ## sanity check that proxmox is ready
+      - name: Proxmox validations
+        run: |
+          set -euo pipefail
+          make l0-runway
