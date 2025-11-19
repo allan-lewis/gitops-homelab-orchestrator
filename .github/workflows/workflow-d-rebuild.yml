@@ -145,4 +145,4 @@ jobs:
             artifacts/l2_inventory/inventory.json
             artifacts/l2_inventory/inventory.yaml
             artifacts/l3/l3_summary.json
-          if-no-files-found: ignore
+          if-no-files-found: warn
