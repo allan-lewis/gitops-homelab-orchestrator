@@ -95,7 +95,7 @@ jobs:
       - name: Step 2 - Destroy existing DevOps VM (Terraform)
         if: ${{ success() }}  # run only if confirmation + L0 succeeded
         env:
-          APPLY: "0"    # signal real destruction
+          APPLY: "1"    # signal real destruction
         run: |
           echo "=== Destroying DevOps VM (Terraform APPLY=1) ==="
           make l2-destroy
