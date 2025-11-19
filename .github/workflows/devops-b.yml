@@ -73,4 +73,4 @@ jobs:
           name: template-builder-artifacts
           path: artifacts/l1_images
           retention-days: 28
-          if-no-files-found: warn
+          if-no-files-found: error
