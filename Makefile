@@ -83,10 +83,10 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	    --arg created_at "$$created_at" \
 	    '\''.data | { \
 	      name: .name, \
-	      node: $node, \
-	      vmid: ($vmid | tonumber), \
+	      node: $$node, \
+	      vmid: ($$vmid | tonumber), \
 	      storage: (.scsi0 // .ide1 | split(":")[0]), \
-	      created_at: $created_at, \
+	      created_at: $$created_at, \
 	      description: .description \
 	    }'\'' \
 	    > "$$norm_out"; \
