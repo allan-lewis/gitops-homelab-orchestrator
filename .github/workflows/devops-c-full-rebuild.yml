@@ -33,6 +33,7 @@ jobs:
       PVE_NODE:                       ${{ secrets.PVE_NODE }}
       PVE_STORAGE_VM:                 ${{ secrets.PVE_STORAGE_VM }}
       TF_VAR_PROXMOX_VM_PUBLIC_KEY:   ${{ secrets.TF_VAR_PROXMOX_VM_PUBLIC_KEY }}
+      DOPPLER_SERVICE_TOKEN:          ${{ secrets.DOPPLER_SERVICE_TOKEN }}
       ## disable doppler in makefile
       CI: "true"
       DOPPLER: "0"
