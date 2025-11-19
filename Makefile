@@ -1,39 +1,28 @@
 SHELL := /bin/bash
-.SHELLFLAGS := -eu -o pipefail -c
+.SHELLFLAGS := -eu -o pipefail -c 
 .ONESHELL:
-.DEFAULT_GOAL := help
 
-## Secrets runner wrapper
-## - Default: use Doppler locally.
-## - In CI (GitHub Actions), default to **no Doppler**.
-## - You can still override explicitly:
-##     make l1-build RUN=
-##     make l1-build DOPPLER=0
-##     make l1-build FORCE_DOPPLER=1
-# Local default
-RUN ?= doppler run --
-# Auto-disable in CI unless explicitly forced
-ifeq ($(CI),true)
-  ifneq ($(FORCE_DOPPLER),1)
+RUN ?= doppler run -- # by default, run using doppler
+ifeq ($(CI),true) # skip doppler in CI mode 
+  ifneq ($(FORCE_DOPPLER),1) # unless forcing doppler usage
     override RUN :=
   endif
 endif
-# Manual kill switch (works anywhere): DOPPLER=0
-ifeq ($(DOPPLER),0)
+ifeq ($(DOPPLER),0) # kill switch to disable doppler 
   override RUN :=
 endif
 
+export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
+export ANSIBLE_HOST_KEY_CHECKING := False
+export PIP_DISABLE_PIP_VERSION_CHECK := 1
 export RUN
 
-export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
-export ANSIBLE_HOST_KEY_CHECKING = False
-export PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Load .env if present
 ifneq (,$(wildcard ./.env))
-include .env
+include .env # load .env if present
 export
 endif
+
+.DEFAULT_GOAL := help
 
 .PHONY: help clean l0-runway l2-destroy l2-apply l3-apply l4-smoke
 
@@ -49,57 +38,57 @@ l0-runway: ## Run the L0 runway (Proxmox validations via Ansible)
 	  ansible-playbook ansible/playbooks/l0_runway.yml'
 
 l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
-	@cd terraform/l2 && \
-	  echo "Using Terraform in $$(pwd)" && \
-	  $(RUN) terraform init -input=false -upgrade=false >/dev/null && \
-	  if [ "$${APPLY:-0}" = "1" ]; then \
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  cd terraform/l2; \
+	  echo "Using Terraform in $$PWD"; \
+	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
+	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
+	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
+	  : "$${TF_VAR_PROXMOX_VM_PUBLIC_KEY:?Missing TF_VAR_PROXMOX_VM_PUBLIC_KEY}"; \
+	  TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)"; \
+	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
+	         TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
+	         TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
+	         TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
+	         TF_VAR_l1_manifest_json; \
+	  terraform init -input=false -upgrade=false >/dev/null; \
+	  if [ "$${APPLY:-0}" = 1 ]; then \
 	    echo "Applying Terraform destroy (APPLY=1)"; \
-	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
-	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
-	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
-	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
-	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
-	      $(RUN) terraform apply -destroy -auto-approve; \
+	    terraform apply -destroy -auto-approve; \
 	  else \
 	    echo "Terraform destroy plan only (no changes applied)."; \
 	    echo "Set APPLY=1 to actually destroy."; \
-	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
-	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
-	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
-	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
-	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
-	      $(RUN) terraform plan -destroy; \
-	  fi
-
+	    terraform plan -destroy; \
+	  fi'
 
 l2-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
-	@cd terraform/l2 && \
-	  echo "Using Terraform in $$(pwd)" && \
-	  $(RUN) terraform init -input=false -upgrade=false >/dev/null && \
-	  if [ "$${APPLY:-0}" = "1" ]; then \
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  cd terraform/l2; \
+	  echo "Using Terraform in $$PWD"; \
+	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
+	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
+	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
+	  : "$${TF_VAR_PROXMOX_VM_PUBLIC_KEY:?Missing TF_VAR_PROXMOX_VM_PUBLIC_KEY}"; \
+	  TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)"; \
+	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
+	         TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
+	         TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
+	         TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
+	         TF_VAR_l1_manifest_json; \
+	  terraform init -input=false -upgrade=false >/dev/null; \
+	  if [ "$${APPLY:-0}" = 1 ]; then \
 	    echo "Applying Terraform changes (APPLY=1)"; \
-	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
-	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
-	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
-	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
-	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
-	      $(RUN) terraform apply -auto-approve; \
+	    terraform apply -auto-approve; \
 	  else \
 	    echo "Terraform plan only (no changes applied)."; \
 	    echo "Set APPLY=1 to actually apply."; \
-	    TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
-	    TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
-	    TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
-	    TF_VAR_proxmox_vm_public_key="$$TF_VAR_PROXMOX_VM_PUBLIC_KEY" \
-	    TF_VAR_l1_manifest_json="$$(jq -c . ../../manifests/arch_devops/template-manifest.json)" \
-	      $(RUN) terraform plan; \
-	  fi
+	    terraform plan; \
+	  fi'
 
 l3-apply: ## Converge Arch DevOps host (L3 via Ansible)
 	@$(RUN) bash -lc 'ansible-playbook \
 	  -i ansible/inventories/arch_devops/hosts.ini \
 	  ansible/playbooks/l3_arch.yml'
-
 
 l4-smoke: ## Quick smoke test for the rebuilt DevOps host (with retry)
 	@echo "=== Running L4 Smoke Test (Ansible ping + uptime) ==="
