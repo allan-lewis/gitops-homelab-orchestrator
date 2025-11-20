@@ -47,22 +47,7 @@ variable "ci_user" {
   default     = "lab"
 }
 
-# variable "ssh_authorized_keys" {
-#   description = "SSH keys for default user"
-#   type        = list(string)
-#   default     = []
-# }
-
 variable "proxmox_vm_public_key" {
   description = "Public SSH key injected from environment (TF_VAR_PROXMOX_VM_PUBLIC_KEY)"
   type        = string
-}
-
-variable "l1_manifest_json" {
-  type        = string
-  description = "JSON string of the L1 template manifest (flat + config). Passed via TF_VAR_l1_manifest_json."
-  validation {
-    condition     = can(jsondecode(var.l1_manifest_json))
-    error_message = "l1_manifest_json must be valid JSON."
-  }
 }

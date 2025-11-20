@@ -1,21 +1,13 @@
 locals {
-  # Read the L1 manifest passed in via environment variable
-  l1_manifest_raw = var.l1_manifest_json
-  manifest        = jsondecode(local.l1_manifest_raw)
-
-  # Canonical fields from the manifest (flat + config)
-  template_name = local.manifest.name
-  template_node = local.manifest.node
-  template_vmid = tonumber(local.manifest.vmid)
-  template_cfg  = try(local.manifest.config, {})
-
-  # Useful for debugging/change detection
-  manifest_hash = sha256(local.l1_manifest_raw)
-
   # Load golden host spec from JSON
-  arch_devops_hosts = jsondecode(
-    file("${path.module}/../../infra/arch/devops/spec/hosts.json")
-  ).hosts
+  arch_devops_hosts = jsondecode(file("${path.module}/../../infra/arch/devops/spec/hosts.json")).hosts
+
+  # Logical template refs -> actual manifest files
+  template_manifests = {
+    "arch/devops/stable" = "${path.module}/../../infra/arch/devops/artifacts/template.json"
+    # "arch/devops/canary" = "${path.module}/../../infra/arch/devops/artifacts/template-canary.json"
+    # etc, later…
+  }
 
   # Transform host spec -> vms map expected by your existing module/resource
   vms = {
@@ -33,6 +25,8 @@ locals {
       ssh_user  = host.ssh_user
 
       ipconfig0 = host.terraform.ipconfig
+
+      manifest = jsondecode(file(local.template_manifests[host.terraform.template_ref]))
     }
   }
 }

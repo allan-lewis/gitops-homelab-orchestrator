@@ -94,7 +94,6 @@ l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
 	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
 	  : "$${TF_VAR_PROXMOX_VM_PUBLIC_KEY:?Missing TF_VAR_PROXMOX_VM_PUBLIC_KEY}"; \
-	  TF_VAR_l1_manifest_json="$$(jq -c . ../../infra/arch/devops/artifacts/template.json)"; \
 	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
 	         TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
 	         TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \
@@ -118,7 +117,6 @@ l2-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
 	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
 	  : "$${TF_VAR_PROXMOX_VM_PUBLIC_KEY:?Missing TF_VAR_PROXMOX_VM_PUBLIC_KEY}"; \
-	  TF_VAR_l1_manifest_json="$$(jq -c . ../../infra/arch/devops/artifacts/template.json)"; \
 	  export TF_VAR_pve_access_host="$$PVE_ACCESS_HOST" \
 	         TF_VAR_pm_token_id="$$PM_TOKEN_ID" \
 	         TF_VAR_pm_token_secret="$$PM_TOKEN_SECRET" \

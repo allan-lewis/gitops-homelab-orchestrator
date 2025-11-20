@@ -7,7 +7,7 @@ module "arch" {
   # Identity / placement
   name       = each.key
   node       = each.value.node
-  clone_vmid = local.template_vmid
+  clone_vmid = each.value.manifest.vmid
 
   # Sizing
   cores     = each.value.cores
