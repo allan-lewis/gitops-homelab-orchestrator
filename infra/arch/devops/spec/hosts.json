@@ -1,0 +1,38 @@
+{
+  "hosts": {
+    "blaine": {
+      "ip": "192.168.86.98",
+      "ssh_user": "lab",
+      "tags": ["arch", "devops", "canary"],
+
+      "terraform": {
+        "cpu": 2,
+        "memory_mb": 2048,
+        "disk_gb": 32,
+        "template_ref": "arch/devops/stable"
+      },
+
+      "ansible": {
+        "python_interpreter": "/usr/bin/python3",
+        "groups": ["arch_devops"]
+      }
+    },
+    "patricia": {
+      "ip": "192.168.86.99",
+      "ssh_user": "lab",
+      "tags": ["arch", "devops"],
+
+      "terraform": {
+        "cpu": 2,
+        "memory_mb": 2048,
+        "disk_gb": 32,
+        "template_ref": "arch/devops/stable"
+      },
+
+      "ansible": {
+        "python_interpreter": "/usr/bin/python3",
+        "groups": ["arch_devops"]
+      }
+    }
+  }
+}
