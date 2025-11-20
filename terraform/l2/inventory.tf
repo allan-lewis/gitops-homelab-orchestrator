@@ -1,12 +1,15 @@
 # Compose an inventory map from module results + declared VM specs
 locals {
-  # Build a normalized inventory per host
+  # Build a normalized inventory per host from local.vms + module outputs
   inventory = {
-    for name, spec in var.vms : name => {
+    for name, spec in local.vms : name => {
       vm_id    = try(module.arch[name].vm_id, null)
       ip       = try(module.arch[name].ip_address, "")
       node     = spec.node
-      ssh_user = var.ci_user
+
+      # use ssh_user from the golden spec (hosts.json via local.vms)
+      ssh_user = spec.ssh_user
+
       tags     = spec.tags
     }
   }

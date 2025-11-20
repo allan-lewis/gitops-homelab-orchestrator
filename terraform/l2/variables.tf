@@ -66,17 +66,3 @@ variable "l1_manifest_json" {
     error_message = "l1_manifest_json must be valid JSON."
   }
 }
-
-# --- VM definitions (drives for_each in module) ---
-
-variable "vms" {
-  description = "Map of VMs to create, keyed by name"
-  type = map(object({
-    node      = string
-    cores     = number
-    memory_mb = number
-    disk_gb   = number
-    ipconfig0 = string
-    tags      = list(string)
-  }))
-}

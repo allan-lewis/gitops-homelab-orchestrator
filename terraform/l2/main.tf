@@ -1,8 +1,8 @@
 module "arch" {
   source = "./modules/common_vm_cloudinit"
 
-  # Create one VM per entry in var.vms
-  for_each = var.vms
+  # Create one VM per entry in local.vms
+  for_each = local.vms
 
   # Identity / placement
   name       = each.key
@@ -20,7 +20,7 @@ module "arch" {
   bridge  = var.bridge
 
   # Metadata
-  tags = each.value.tags
+  tags = each.value.tags 
 
   # Cloud-init (static IPs)
   ipconfig0           = each.value.ipconfig0
