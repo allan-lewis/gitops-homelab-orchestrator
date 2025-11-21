@@ -15,6 +15,8 @@ endif
 export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
 export ANSIBLE_HOST_KEY_CHECKING := False
 export PIP_DISABLE_PIP_VERSION_CHECK := 1
+export ORCHESTRATOR_OS = "arch"
+export ORCHESTRATOR_PERSONA = "devops"
 export RUN
 
 ifneq (,$(wildcard ./.env))
@@ -84,7 +86,19 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	    '\''.data | {name: .name, node: $$node, vmid: ($$vmid | tonumber), storage: (.scsi0 // .ide1 | split(":")[0]), created_at: $$created_at, description: .description}'\'' \
 	    > "$$norm_out"; \
 	  echo "Wrote $$raw_out"; \
-	  echo "Wrote $$norm_out"'
+	  echo "Wrote $$norm_out"; \
+	  ts="$$(date -u +"%Y%m%d-%H%M%S")"; \
+	  os="$${ORCHESTRATOR_OS:-unknown_os}"; \
+	  os="$${os%\"}"; \
+	  os="$${os#\"}"; \
+	  persona="$${ORCHESTRATOR_PERSONA:-unknown_persona}"; \
+	  persona="$${persona%\"}"; \
+	  persona="$${persona#\"}"; \
+	  dest_dir="infra/$$os/$$persona/artifacts"; \
+	  mkdir -p "$$dest_dir"; \
+	  dest_file="$$dest_dir/vm-template-$$ts.json"; \
+	  cp "$$norm_out" "$$dest_file"; \
+	  echo "Saved timestamped manifest to $$dest_file"'
 
 l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
