@@ -19,6 +19,9 @@ export ORCHESTRATOR_OS = "arch"
 export ORCHESTRATOR_PERSONA = "devops"
 export RUN
 
+L1_UPDATE_STABLE ?= 0
+export L1_UPDATE_STABLE
+
 ifneq (,$(wildcard ./.env))
 include .env # load .env if present
 export
@@ -98,7 +101,16 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	  mkdir -p "$$dest_dir"; \
 	  dest_file="$$dest_dir/vm-template-$$ts.json"; \
 	  cp "$$norm_out" "$$dest_file"; \
-	  echo "Saved timestamped manifest to $$dest_file"'
+	  echo "Saved timestamped manifest to $$dest_file"; \
+	  update_stable="$${L1_UPDATE_STABLE:-0}"; \
+	  if [ "$$update_stable" = "1" ]; then \
+	    spec_dir="infra/$$os/$$persona/spec"; \
+	    mkdir -p "$$spec_dir"; \
+	    ln -sf "../artifacts/$${dest_file##*/}" "$$spec_dir/vm-template-stable.json"; \
+	    echo "Updated stable symlink at $$spec_dir/vm-template-stable.json -> ../artifacts/$${dest_file##*/}"; \
+	  else \
+	    echo "Skipping stable symlink update (L1_UPDATE_STABLE=$$update_stable)"; \
+	  fi'
 
 l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
