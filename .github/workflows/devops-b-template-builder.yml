@@ -106,7 +106,7 @@ jobs:
           git status --short || true
 
           # Add the stuff we care about
-          git add artifacts infra/arch/devops || true
+          git add infra/arch/devops || true
 
           # If nothing staged, bail out quietly
           if git diff --cached --quiet; then

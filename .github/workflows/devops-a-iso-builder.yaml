@@ -43,3 +43,24 @@ jobs:
       ## prepare the local runner environment
       - name: Checkout
         uses: actions/checkout@v4
+
+      ## get a baseline arch iso profile established
+      - name: Bootstrap ArchISO profile
+        run: |
+          mkdir -p infra/arch/iso
+          docker run --rm -i --privileged \
+            -v "$PWD:/work" -w /work \
+            archlinux:latest bash -lc '
+              set -eux
+              pacman -Syu --noconfirm archiso
+              rm -rf infra/arch/iso/profile
+              cp -r /usr/share/archiso/configs/releng infra/arch/iso/profile
+            '
+
+      - name: Show default automated_script.sh
+        run: |
+          echo "=== Default releng .automated_script.sh ==="
+          cat infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          echo "=== END ==="
+
+  
