@@ -79,7 +79,6 @@ jobs:
 
           echo "=== Custom automated_script.sh installed ==="
           ls -l infra/arch/iso/profile/airootfs/root/.automated_script.sh
-            '
 
       - name: Show customized automated_script.sh
         run: |
