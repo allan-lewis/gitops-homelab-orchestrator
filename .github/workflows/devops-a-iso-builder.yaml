@@ -115,6 +115,42 @@ jobs:
               ls -lh /out/*.iso
             '
 
+      ## generate a build manifest
+      - name: Generate ISO build manifest
+        run: |
+          set -euo pipefail
+
+          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
+          ISO_NAME=$(basename "$ISO_PATH")
+          BASE_NAME="${ISO_NAME%.iso}"
+          MANIFEST_PATH="infra/arch/artifacts/${BASE_NAME}.json"
+
+          mkdir -p infra/arch/artifacts
+
+          cat > "$MANIFEST_PATH" << 'EOF'
+          {
+            "iso_name": "__ISO_NAME__",
+            "built_at": "__BUILT_AT__",
+            "git_sha": "__GIT_SHA__",
+            "proxmox_node": "__PVE_NODE__",
+            "proxmox_storage": "__PVE_ISO_STORAGE__",
+            "uploader_host": "__HOSTNAME__",
+            "workflow_run_id": "__RUN_ID__"
+          }
+          EOF
+
+          # Now substitute template placeholders safely
+          sed -i "s|__ISO_NAME__|${ISO_NAME}|g" "$MANIFEST_PATH"
+          sed -i "s|__BUILT_AT__|$(date -u +"%Y-%m-%dT%H:%M:%SZ")|g" "$MANIFEST_PATH"
+          sed -i "s|__GIT_SHA__|${GITHUB_SHA}|g" "$MANIFEST_PATH"
+          sed -i "s|__PVE_NODE__|${PVE_NODE}|g" "$MANIFEST_PATH"
+          sed -i "s|__PVE_ISO_STORAGE__|${PVE_ISO_STORAGE}|g" "$MANIFEST_PATH"
+          sed -i "s|__HOSTNAME__|$(hostname)|g" "$MANIFEST_PATH"
+          sed -i "s|__RUN_ID__|${GITHUB_RUN_ID}|g" "$MANIFEST_PATH"
+
+          echo "Wrote manifest to: $MANIFEST_PATH"
+          cat "$MANIFEST_PATH"
+
       ## upload custom iso to proxmox
       - name: Upload ISO to Proxmox
         run: |

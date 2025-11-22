@@ -6,10 +6,6 @@ on:
       update-stable:
         description: "Update vm-template-stable.json to latest template manifest"
         required: true
-        default: "no"
-      commit-artifacts:
-        description: "Commit artifacts and/or stable symlink back to repo"
-        required: true
         default: "yes"
 
 permissions:
@@ -93,9 +89,8 @@ jobs:
           retention-days: 28
           if-no-files-found: error
 
-      ## Optionally commit artifacts and/or stable link
+      ## Commit artifacts and stable link
       - name: Commit and push artifacts
-        if: ${{ inputs.update-stable == 'yes' || inputs.commit-artifacts == 'yes' }}
         run: |
           set -euo pipefail
 
