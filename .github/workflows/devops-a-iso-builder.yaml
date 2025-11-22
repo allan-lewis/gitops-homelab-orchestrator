@@ -89,20 +89,30 @@ jobs:
       ## rebuild the arch iso with custom script
       - name: Build Arch ISO with mkarchiso
         run: |
+          mkdir -p infra/arch/iso/out
+
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
 
           docker run --rm -i --privileged \
-            -v "$PWD:/work" -w /work/infra/arch/iso \
+            -v "$PWD/infra/arch/iso/profile":/profile \
+            -v "$PWD/infra/arch/iso/out":/out \
             -e ARCHISO_TRACE=1 \
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             archlinux:latest bash -lc '
               set -eux
               pacman -Syu --noconfirm archiso
-              rm -rf work out
-              mkarchiso -v -w work -o out profile 2>&1 | tee build.log
-              chown -R "$HOST_UID:$HOST_GID" work out build.log
-              ls -lh out/*.iso
+
+              # Clean previous outputs (in case of rerun)
+              rm -rf /out/*
+              
+              # Use a TEMP work dir *inside the container only*
+              mkarchiso -v -w /tmp/archiso-work -o /out /profile 2>&1 | tee /out/build.log
+
+              # Fix ownership of outputs on the mounted /out volume
+              chown -R "$HOST_UID:$HOST_GID" /out
+
+              ls -lh /out/*.iso
             '
 
       ## upload custom iso to proxmox
