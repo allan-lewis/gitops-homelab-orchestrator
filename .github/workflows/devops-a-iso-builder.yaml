@@ -99,3 +99,22 @@ jobs:
               mkarchiso -v -w work -o out profile 2>&1 | tee build.log
               ls -lh out/*.iso
             '
+
+      ## upload custom iso to proxmox
+      - name: Upload ISO to Proxmox
+        run: |
+          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
+          ISO_NAME=$(basename "$ISO_PATH")
+
+          echo "Found ISO: $ISO_NAME"
+          echo "Uploading to Proxmox storage: ${PVE_ISO_STORAGE}"
+
+          curl -k \
+            -X POST "https://${PVE_ACCESS_HOST}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload" \
+            -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
+            -F "filename=@${ISO_PATH}" \
+            -F "content=iso" \
+            --progress-bar | tee upload-response.json
+
+          echo "=== Upload response ==="
+          cat upload-response.json
