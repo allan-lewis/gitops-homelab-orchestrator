@@ -52,7 +52,7 @@ jobs:
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
 
-          sudo docker run --rm -i --privileged \
+          docker run --rm -i --privileged \
             -v "$PWD:/work" -w /work \
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             archlinux:latest bash -lc '
