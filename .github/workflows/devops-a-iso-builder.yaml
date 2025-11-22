@@ -63,4 +63,21 @@ jobs:
           cat infra/arch/iso/profile/airootfs/root/.automated_script.sh
           echo "=== END ==="
 
+      ## copy in custom automated script to configure the iso
+      - name: Install custom automated_script.sh
+        run: |
+          cp infra/arch/iso/automated_script.sh \
+             infra/arch/iso/profile/airootfs/root/.automated_script.sh
+
+          chmod +x infra/arch/iso/profile/airootfs/root/.automated_script.sh
+
+          echo "=== Custom automated_script.sh installed ==="
+          ls -l infra/arch/iso/profile/airootfs/root/.automated_script.sh
+            '
+
+      - name: Show customized automated_script.sh
+        run: |
+          echo "=== Default releng .automated_script.sh ==="
+          cat infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          echo "=== END ==="
   
