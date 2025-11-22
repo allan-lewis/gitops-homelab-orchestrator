@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       update-stable:
-        description: "Update iso-manifest.json to latest template manifest"
+        description: "Update iso-manifest-stable.json to latest template manifest"
         required: true
         default: "yes"
 
