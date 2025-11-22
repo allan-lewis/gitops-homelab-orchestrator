@@ -48,13 +48,19 @@ jobs:
       - name: Bootstrap ArchISO profile
         run: |
           mkdir -p infra/arch/iso
-          docker run --rm -i --privileged \
+
+          HOST_UID=$(id -u)
+          HOST_GID=$(id -g)
+
+          sudo docker run --rm -i --privileged \
             -v "$PWD:/work" -w /work \
+            -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             archlinux:latest bash -lc '
               set -eux
               pacman -Syu --noconfirm archiso
               rm -rf infra/arch/iso/profile
               cp -r /usr/share/archiso/configs/releng infra/arch/iso/profile
+              chown -R "$HOST_UID:$HOST_GID" infra/arch/iso/profile
             '
 
       - name: Show default automated_script.sh
