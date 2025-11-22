@@ -52,7 +52,10 @@ jobs:
       ## get a baseline arch iso profile established
       - name: Bootstrap ArchISO profile
         run: |
-          mkdir -p infra/arch/iso
+          set -euo pipefail
+
+          BUILD_ROOT=".iso-build/archiso"
+          mkdir -p "$BUILD_ROOT"
 
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
@@ -63,61 +66,68 @@ jobs:
             archlinux:latest bash -lc '
               set -eux
               pacman -Syu --noconfirm archiso
-              rm -rf infra/arch/iso/profile
-              cp -r /usr/share/archiso/configs/releng infra/arch/iso/profile
-              chown -R "$HOST_UID:$HOST_GID" infra/arch/iso/profile
+              rm -rf .iso-build/archiso/profile
+              cp -r /usr/share/archiso/configs/releng .iso-build/archiso/profile
+              chown -R "$HOST_UID:$HOST_GID" .iso-build/archiso/profile
             '
+
+          ls -R .iso-build/archiso/profile
 
       - name: Show default automated_script.sh
         run: |
           echo "=== Default releng .automated_script.sh ==="
-          cat infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          cat .iso-build/archiso/profile/airootfs/root/.automated_script.sh
           echo "=== END ==="
 
       ## copy in custom automated script to configure the iso
       - name: Install custom automated_script.sh
         run: |
-          cp infra/arch/iso/automated_script.sh \
-             infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          set -euo pipefail
 
-          chmod +x infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          SRC="infra/arch/iso/automated_script.sh"
+          DEST=".iso-build/archiso/profile/airootfs/root/.automated_script.sh"
 
-          echo "=== Custom automated_script.sh installed ==="
-          ls -l infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          cp "$SRC" "$DEST"
+          chmod +x "$DEST"
+
+          echo "=== Installed custom automated_script.sh ==="
+          ls -l "$DEST"
 
       - name: Show customized automated_script.sh
         run: |
           echo "=== Default releng .automated_script.sh ==="
-          cat infra/arch/iso/profile/airootfs/root/.automated_script.sh
+          cat .iso-build/archiso/profile/airootfs/root/.automated_script.sh
           echo "=== END ==="
   
       ## rebuild the arch iso with custom script
       - name: Build Arch ISO with mkarchiso
         run: |
-          mkdir -p infra/arch/iso/out
+          set -euo pipefail
+
+          BUILD_ROOT=".iso-build/archiso"
+          mkdir -p "${BUILD_ROOT}/out"
 
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
 
           docker run --rm -i --privileged \
-            -v "$PWD/infra/arch/iso/profile":/profile \
-            -v "$PWD/infra/arch/iso/out":/out \
+            -v "$PWD:/work" -w /work \
             -e ARCHISO_TRACE=1 \
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             archlinux:latest bash -lc '
               set -eux
               pacman -Syu --noconfirm archiso
 
-              # Clean previous outputs (in case of rerun)
-              rm -rf /out/*
-              
-              # Use a TEMP work dir *inside the container only*
-              mkarchiso -v -w /tmp/archiso-work -o /out /profile 2>&1 | tee /out/build.log
+              rm -rf .iso-build/archiso/out/*
+              mkarchiso -v \
+                -w /tmp/archiso-work \
+                -o .iso-build/archiso/out \
+                .iso-build/archiso/profile \
+                2>&1 | tee .iso-build/archiso/out/build.log
 
-              # Fix ownership of outputs on the mounted /out volume
-              chown -R "$HOST_UID:$HOST_GID" /out
+              chown -R "$HOST_UID:$HOST_GID" .iso-build/archiso/out
 
-              ls -lh /out/*.iso
+              ls -lh .iso-build/archiso/out/*.iso
             '
 
       ## generate a build manifest
@@ -125,7 +135,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
+          ISO_PATH=$(echo .iso-build/archiso/out/*.iso)
           ISO_NAME=$(basename "$ISO_PATH")
           BASE_NAME="${ISO_NAME%.iso}"
           MANIFEST_PATH="infra/arch/artifacts/${BASE_NAME}.json"
@@ -144,7 +154,6 @@ jobs:
           }
           EOF
 
-          # Now substitute template placeholders safely
           sed -i "s|__ISO_NAME__|${ISO_NAME}|g" "$MANIFEST_PATH"
           sed -i "s|__BUILT_AT__|$(date -u +"%Y-%m-%dT%H:%M:%SZ")|g" "$MANIFEST_PATH"
           sed -i "s|__GIT_SHA__|${GITHUB_SHA}|g" "$MANIFEST_PATH"
@@ -161,7 +170,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
+          ISO_PATH=$(echo .iso-build/archiso/out/*.iso)
           ISO_NAME=$(basename "$ISO_PATH")
 
           BASE_URL="${PVE_ACCESS_HOST%/}"
@@ -169,7 +178,6 @@ jobs:
           echo "Found ISO: $ISO_NAME"
           echo "Uploading to Proxmox storage: ${PVE_ISO_STORAGE} via ${BASE_URL}"
 
-          # --fail-with-body (or -f) makes curl return non-zero on HTTP 4xx/5xx
           curl -k --fail-with-body \
             -X POST "${BASE_URL}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload?content=iso" \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
@@ -179,8 +187,29 @@ jobs:
           echo "=== Upload response ==="
           cat upload-response.json
 
+      ## update stable iso manifest
+      - name: Update stable ISO manifest (optional)
+        if: ${{ inputs.update-stable == 'yes' }}
+        run: |
+          set -euo pipefail
+
+          ISO_PATH=$(echo .iso-build/archiso/out/*.iso)
+          ISO_NAME=$(basename "$ISO_PATH")
+          BASE_NAME="${ISO_NAME%.iso}"
+
+          MANIFEST_SOURCE="infra/arch/artifacts/${BASE_NAME}.json"
+          MANIFEST_STABLE="infra/arch/spec/iso-manifest-stable.json"
+
+          echo "update-stable=true → updating ${MANIFEST_STABLE}"
+
+          mkdir -p infra/arch/spec
+          cp "$MANIFEST_SOURCE" "$MANIFEST_STABLE"
+
+          echo "=== Stable manifest updated ==="
+          cat "$MANIFEST_STABLE"
+
       ## commit iso manifest
-      - name: Commit ISO manifest
+      - name: Commit ISO manifests
         env:
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
@@ -189,18 +218,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
-          ISO_NAME=$(basename "$ISO_PATH")
-          BASE_NAME="${ISO_NAME%.iso}"
-          MANIFEST_PATH="infra/arch/artifacts/${BASE_NAME}.json"
-
           git status --short
 
-          # Only commit if this manifest actually changed
-          if ! git diff --quiet -- "$MANIFEST_PATH"; then
-            git add "$MANIFEST_PATH"
-            git commit -m "chore(iso): update manifest for ${ISO_NAME}" || echo "Nothing to commit"
-            git push origin "${GITHUB_REF_NAME}"
+          # Stage all manifest JSONs and the stable pointer (if it exists)
+          git add infra/arch/artifacts/*.json || true
+          git add infra/arch/spec/iso-manifest-stable.json || true
+
+          # Only commit if there is something staged
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit."
           else
-            echo "No changes in ${MANIFEST_PATH}, skipping commit."
+            git commit -m "chore(iso): update ISO manifests"
+            git push origin "${GITHUB_REF_NAME}"
           fi

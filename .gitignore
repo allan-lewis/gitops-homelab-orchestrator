@@ -92,3 +92,5 @@ Icon?
 !/infra/** 
 !template-manifest.json
 !archinstall_config.json
+
+.iso-build/
