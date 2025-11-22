@@ -1,0 +1,45 @@
+name: devops a - iso builder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read 
+  actions: read
+
+concurrency:
+  group: devops-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iso-builder:
+    timeout-minutes: 20
+    environment: lab
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+
+    env:
+      ## required for proxmox host access
+      PVE_ACCESS_HOST:   ${{ secrets.PVE_ACCESS_HOST }}
+      PM_TOKEN_ID:       ${{ secrets.PM_TOKEN_ID }}
+      PM_TOKEN_SECRET:   ${{ secrets.PM_TOKEN_SECRET }}
+      PVE_NODE:          ${{ secrets.PVE_NODE }}
+      PVE_STORAGE_VM:    ${{ secrets.PVE_STORAGE_VM }}
+      PVE_ISO_STORAGE:   ${{ secrets.PVE_ISO_STORAGE }} 
+      ## disable doppler in makefile
+      CI: "true"
+      DOPPLER: "0"
+
+    steps:
+      ## log local runner information
+      - name: Identify runner
+        run: |
+          echo "Runner: $RUNNER_NAME"
+          echo "Host: $(hostname)"
+          echo "User: $(whoami)"
+
+      ## prepare the local runner environment
+      - name: Checkout
+        uses: actions/checkout@v4
