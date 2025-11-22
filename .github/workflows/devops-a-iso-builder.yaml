@@ -121,11 +121,14 @@ jobs:
           ISO_PATH=$(echo infra/arch/iso/out/*.iso)
           ISO_NAME=$(basename "$ISO_PATH")
 
+          # Trim any trailing slash from PVE_ACCESS_HOST
+          BASE_URL="${PVE_ACCESS_HOST%/}"
+
           echo "Found ISO: $ISO_NAME"
-          echo "Uploading to Proxmox storage: ${PVE_ISO_STORAGE}"
+          echo "Uploading to Proxmox storage: ${PVE_ISO_STORAGE} via ${BASE_URL}"
 
           curl -k \
-            -X POST "https://${PVE_ACCESS_HOST}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload" \
+            -X POST "${BASE_URL}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload" \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
             -F "filename=@${ISO_PATH}" \
             -F "content=iso" \
