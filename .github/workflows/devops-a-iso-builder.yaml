@@ -118,6 +118,8 @@ jobs:
       ## upload custom iso to proxmox
       - name: Upload ISO to Proxmox
         run: |
+          set -euo pipefail
+
           ISO_PATH=$(echo infra/arch/iso/out/*.iso)
           ISO_NAME=$(basename "$ISO_PATH")
 
@@ -126,7 +128,8 @@ jobs:
           echo "Found ISO: $ISO_NAME"
           echo "Uploading to Proxmox storage: ${PVE_ISO_STORAGE} via ${BASE_URL}"
 
-          curl -k \
+          # --fail-with-body (or -f) makes curl return non-zero on HTTP 4xx/5xx
+          curl -k --fail-with-body \
             -X POST "${BASE_URL}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload?content=iso" \
             -H "Authorization: PVEAPIToken=${PM_TOKEN_ID}=${PM_TOKEN_SECRET}" \
             -F "filename=@${ISO_PATH}" \
