@@ -2,9 +2,14 @@ name: devops a - iso builder
 
 on:
   workflow_dispatch:
+    inputs:
+      update-stable:
+        description: "Update iso-manifest.json to latest template manifest"
+        required: true
+        default: "yes"
 
 permissions:
-  contents: read 
+  contents: write 
   actions: read
 
 concurrency:
@@ -173,3 +178,29 @@ jobs:
 
           echo "=== Upload response ==="
           cat upload-response.json
+
+      ## commit iso manifest
+      - name: Commit ISO manifest
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+
+          ISO_PATH=$(echo infra/arch/iso/out/*.iso)
+          ISO_NAME=$(basename "$ISO_PATH")
+          BASE_NAME="${ISO_NAME%.iso}"
+          MANIFEST_PATH="infra/arch/artifacts/${BASE_NAME}.json"
+
+          git status --short
+
+          # Only commit if this manifest actually changed
+          if ! git diff --quiet -- "$MANIFEST_PATH"; then
+            git add "$MANIFEST_PATH"
+            git commit -m "chore(iso): update manifest for ${ISO_NAME}" || echo "Nothing to commit"
+            git push origin "${GITHUB_REF_NAME}"
+          else
+            echo "No changes in ${MANIFEST_PATH}, skipping commit."
+          fi
