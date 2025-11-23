@@ -23,7 +23,13 @@ source "proxmox-iso" "arch" {
   token       = var.proxmox_token
   node        = var.node
 
+  # No communicator – we’re not using SSH/WinRM
   communicator = "none"
+
+  # Let the guest (your autorun script) shut itself down.
+  # Packer will wait for the VM to power off, up to shutdown_timeout.
+  disable_shutdown = true
+  shutdown_timeout = "5m"
 
   # --- VM identity & resources ---
   vm_name         = local.computed_template_name
@@ -62,9 +68,10 @@ source "proxmox-iso" "arch" {
     unmount  = true
   }
 
-  # --- Delay shutdown so the auto-script can complete ---
-  boot_wait    = "10s"
-  boot_command = ["<wait3m>"]
+  # Small boot wait, no artificial delay
+  boot_wait = "10s"
+  # No boot_command needed; ISO should be fully unattended and
+  # the autorun script should end with `systemctl poweroff`.
 
   # --- Cloud-init for clones ---
   cloud_init              = true
