@@ -1,9 +1,9 @@
 {
   "iso_name": "archlinux-2025.11.23-x86_64.iso",
-  "built_at": "2025-11-23T01:04:52Z",
-  "git_sha": "898e5869a648be83192754cc2efebcb5ea1c8714",
+  "built_at": "2025-11-23T03:15:26Z",
+  "git_sha": "b37bb63a3481eeaf31519312d009ed6f3c534053",
   "proxmox_node": "polaris",
   "proxmox_storage": "local",
   "uploader_host": "sheemie",
-  "workflow_run_id": "19603664362"
+  "workflow_run_id": "19605032073"
 }
