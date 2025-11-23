@@ -7,6 +7,15 @@ packer {
   }
 }
 
+locals {
+  arch_iso_manifest = jsondecode(
+    file("../../infra/arch/spec/iso-manifest-stable.json")
+  )
+
+  arch_iso_storage = local.arch_iso_manifest.proxmox_storage
+  arch_iso_name    = local.arch_iso_manifest.iso_name
+}
+
 source "proxmox-iso" "arch" {
   # --- Authentication & Proxmox connection ---
   proxmox_url = var.proxmox_url
@@ -49,7 +58,7 @@ source "proxmox-iso" "arch" {
   # --- Boot ISO (your custom Arch image) ---
   boot_iso {
     type     = "ide"
-    iso_file = "local:iso/archlinux-2025.11.09-x86_64.iso"
+    iso_file = "${local.arch_iso_storage}:iso/${local.arch_iso_name}"
     unmount  = true
   }
 
