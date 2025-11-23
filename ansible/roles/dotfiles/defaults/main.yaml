@@ -1,0 +1,13 @@
+# ansible/roles/dotfiles/defaults/main.yml
+
+dotfiles_user: "{{ ansible_user_id }}"
+dotfiles_repo: "https://github.com/allan-lewis/dotfiles.git"
+dotfiles_version: "main"
+
+dotfiles_dest: "{{ ansible_env.HOME }}/.dotfiles"
+
+dotfiles_stow_packages:
+  - common-zsh
+  - arch-zsh
+
+dotfiles_shell: "/usr/bin/zsh"
