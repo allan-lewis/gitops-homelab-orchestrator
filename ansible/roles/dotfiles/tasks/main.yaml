@@ -1,12 +1,12 @@
 # ansible/roles/dotfiles/tasks/main.yml
 
-- name: Ensure login shell is zsh
+- name: "Ensure login shell for {{ dotfiles_user }} is zsh"
   become: true
   ansible.builtin.user:
     name: "{{ dotfiles_user }}"
     shell: "{{ dotfiles_shell }}"
 
-- name: Ensure dotfiles destination directory exists
+- name: "Ensure dotfiles destination directory exists"
   become: true
   become_user: "{{ dotfiles_user }}"
   ansible.builtin.file:
@@ -14,7 +14,7 @@
     state: directory
     mode: "0755"
 
-- name: Clone or update dotfiles repo (HTTPS)
+- name: "Clone or update dotfiles repo (HTTPS)"
   become: true
   become_user: "{{ dotfiles_user }}"
   ansible.builtin.git:
@@ -24,7 +24,7 @@
     update: yes
     force: yes
 
-- name: Apply stow packages
+- name: "Apply stow packages"
   become: true
   become_user: "{{ dotfiles_user }}"
   ansible.builtin.command:
