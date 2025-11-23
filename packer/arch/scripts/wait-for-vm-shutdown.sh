@@ -10,7 +10,7 @@ set -euo pipefail
 AUTH_HEADER="Authorization: PVEAPIToken=${PROXMOX_USERNAME}=${PROXMOX_TOKEN}"
 
 # Normalize PROXMOX_URL → ensure it has /api2/json exactly once, no trailing slash.
-RAW_URL="$(printf '%s' "${PROXMOX_URL}" | tr -d '[:space:]')"  # defensively strip whitespace
+RAW_URL="$(printf '%s' "${PROXMOX_URL}" | tr -d '[:space:]')"  # strip whitespace just in case
 API_BASE="${RAW_URL%/}"
 
 case "${API_BASE}" in
@@ -25,14 +25,22 @@ esac
 echo "[wait-for-shutdown] Using Proxmox API base: ${API_BASE}"
 echo "[wait-for-shutdown] Looking up VM named '${VM_NAME}' on node '${PROXMOX_NODE}'..."
 
-# Get non-template VMs with this name, then pick the highest VMID
+# Select:
+#  - correct name
+#  - non-template (template == 0)
+#  - status == "running"
+# Then pick the highest VMID numerically (in case more than one matches).
 VMID="$(
   curl -fsS -k --globoff \
     -H "${AUTH_HEADER}" \
     "${API_BASE}/nodes/${PROXMOX_NODE}/qemu" \
   | jq -r --arg name "${VM_NAME}" '
       .data[]
-      | select(.name == $name and ((.template // 0 | tonumber) == 0))
+      | select(
+          .name == $name
+          and ((.template // 0 | tonumber) == 0)
+          and (.status == "running")
+        )
       | .vmid
     ' \
   | sort -n \
@@ -41,7 +49,7 @@ VMID="$(
 )"
 
 if [[ -z "${VMID}" ]]; then
-  echo "[wait-for-shutdown] ERROR: Could not find non-template VM '${VM_NAME}' on node '${PROXMOX_NODE}'" >&2
+  echo "[wait-for-shutdown] ERROR: Could not find running non-template VM '${VM_NAME}' on node '${PROXMOX_NODE}'" >&2
   exit 1
 fi
 
@@ -51,7 +59,7 @@ STATUS_URL="${API_BASE}/nodes/${PROXMOX_NODE}/qemu/${VMID}/status/current"
 echo "[wait-for-shutdown] Status URL: ${STATUS_URL}"
 
 # 60 * 10s = 10 minutes max
-for i in $(seq 1 180); do
+for i in $(seq 1 60); do
   STATUS="$(
     curl -fsS -k --globoff \
       -H "${AUTH_HEADER}" \
