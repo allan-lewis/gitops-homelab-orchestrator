@@ -23,13 +23,8 @@ source "proxmox-iso" "arch" {
   token       = var.proxmox_token
   node        = var.node
 
-  # No communicator – we’re not using SSH/WinRM
+  # We still don't talk directly to the VM
   communicator = "none"
-
-  # Let the guest (your autorun script) shut itself down.
-  # Packer will wait for the VM to power off, up to shutdown_timeout.
-  disable_shutdown = true
-  shutdown_timeout = "5m"
 
   # --- VM identity & resources ---
   vm_name         = local.computed_template_name
@@ -68,11 +63,12 @@ source "proxmox-iso" "arch" {
     unmount  = true
   }
 
-  # Small boot wait, no artificial delay
+  # Let the ISO boot; no artificial 3-minute wait
   boot_wait = "10s"
-  # No boot_command needed; ISO should be fully unattended and
-  # the autorun script should end with `systemctl poweroff`.
-
+  # No boot_command needed if your ISO self-starts the install.
+  # If you ever need to send keys, you can add a real boot_command here.
+  # boot_command = []
+  
   # --- Cloud-init for clones ---
   cloud_init              = true
   cloud_init_storage_pool = var.storage_vm
@@ -86,6 +82,21 @@ source "proxmox-iso" "arch" {
 build {
   name    = "arch"
   sources = ["source.proxmox-iso.arch"]
+
+  # This runs on the *runner*, not in the VM.
+  # It waits until Proxmox reports that the VM has powered off by itself.
+  provisioner "shell-local" {
+    environment_vars = [
+      "PROXMOX_URL=${var.proxmox_url}",
+      "PROXMOX_USERNAME=${var.proxmox_username}",
+      "PROXMOX_TOKEN=${var.proxmox_token}",
+      "PROXMOX_NODE=${var.node}",
+      "VM_NAME=${local.computed_template_name}",
+    ]
+
+    # Script path is relative to this .pkr.hcl file (packer/arch)
+    script = "${path.root}/scripts/wait-for-vm-shutdown.sh"
+  }
 
   post-processor "manifest" {
     output     = "artifacts/packer-manifest.json"
