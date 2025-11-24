@@ -1,9 +1,20 @@
 ---
+- name: Pacman | wait for database lock to be released
+  ansible.builtin.wait_for:
+    path: /var/lib/pacman/db.lck
+    state: absent
+    timeout: 120 
+  become: true
+
 - name: Pacman | refresh cache & upgrade system
   community.general.pacman:
     update_cache: true
     upgrade: true
   become: true
+  register: pacman_upgrade
+  retries: 5          # try up to 5 times
+  delay: 30           # wait 30s between tries
+  until: pacman_upgrade is succeeded
 
 - name: Pacman | install base packages
   community.general.pacman:
