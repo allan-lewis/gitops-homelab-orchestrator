@@ -16,5 +16,6 @@ dotfiles_dest: "{{ dotfiles_home }}/.dotfiles"
 dotfiles_stow_packages:
   - common-zsh
   - arch-zsh
+  - common-starship
 
 dotfiles_shell: "/usr/bin/zsh"
