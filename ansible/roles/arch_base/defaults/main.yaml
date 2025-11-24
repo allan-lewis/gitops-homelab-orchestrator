@@ -12,6 +12,8 @@ arch_base_packages:
   - tar
   - cmatrix
   - fastfetch
+  - stow
+  - zsh
 
 arch_base_enable_timesyncd: true
 arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"

@@ -7,6 +7,15 @@ packer {
   }
 }
 
+locals {
+  arch_iso_manifest = jsondecode(
+    file("../../infra/arch/spec/iso-manifest-stable.json")
+  )
+
+  arch_iso_storage = local.arch_iso_manifest.proxmox_storage
+  arch_iso_name    = local.arch_iso_manifest.iso_name
+}
+
 source "proxmox-iso" "arch" {
   # --- Authentication & Proxmox connection ---
   proxmox_url = var.proxmox_url
@@ -14,6 +23,7 @@ source "proxmox-iso" "arch" {
   token       = var.proxmox_token
   node        = var.node
 
+  # We still don't talk directly to the VM
   communicator = "none"
 
   # --- VM identity & resources ---
@@ -49,14 +59,16 @@ source "proxmox-iso" "arch" {
   # --- Boot ISO (your custom Arch image) ---
   boot_iso {
     type     = "ide"
-    iso_file = "local:iso/archlinux-2025.11.09-x86_64.iso"
+    iso_file = "${local.arch_iso_storage}:iso/${local.arch_iso_name}"
     unmount  = true
   }
 
-  # --- Delay shutdown so the auto-script can complete ---
-  boot_wait    = "10s"
-  boot_command = ["<wait3m>"]
-
+  # Let the ISO boot; no artificial 3-minute wait
+  boot_wait = "10s"
+  # No boot_command needed if your ISO self-starts the install.
+  # If you ever need to send keys, you can add a real boot_command here.
+  # boot_command = []
+  
   # --- Cloud-init for clones ---
   cloud_init              = true
   cloud_init_storage_pool = var.storage_vm
@@ -70,6 +82,21 @@ source "proxmox-iso" "arch" {
 build {
   name    = "arch"
   sources = ["source.proxmox-iso.arch"]
+
+  # This runs on the *runner*, not in the VM.
+  # It waits until Proxmox reports that the VM has powered off by itself.
+  provisioner "shell-local" {
+    environment_vars = [
+      "PROXMOX_URL=${var.proxmox_url}",
+      "PROXMOX_USERNAME=${var.proxmox_username}",
+      "PROXMOX_TOKEN=${var.proxmox_token}",
+      "PROXMOX_NODE=${var.node}",
+      "VM_NAME=${local.computed_template_name}",
+    ]
+
+    # Script path is relative to this .pkr.hcl file (packer/arch)
+    script = "${path.root}/scripts/wait-for-vm-shutdown.sh"
+  }
 
   post-processor "manifest" {
     output     = "artifacts/packer-manifest.json"

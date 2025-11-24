@@ -29,7 +29,7 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help clean l0-runway l1-init l1-validate l1-build l1-manifest l2-destroy l2-apply l3-apply l4-smoke
+.PHONY: help clean l0-runway l1-init l1-validate l1-build l1-manifest l2-destroy l2-apply l3-render-inventory l3-apply l4-smoke
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -158,10 +158,28 @@ l2-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
 	    terraform plan; \
 	  fi'
 
-l3-apply: ## Converge Arch DevOps host (L3 via Ansible)
-	@$(RUN) bash -lc 'ansible-playbook \
-	  -i ansible/inventories/arch_devops/hosts.ini \
-	  ansible/playbooks/l3_arch.yml'
+# Render Ansible inventory from hosts.json → hosts.ini
+l3-render-inventory: ## Render L3 Ansible inventory from hosts.json
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/render-inventory-from-hosts-json.sh infra/arch/devops/spec/hosts.json artifacts/arch/devops/hosts.ini'
+
+# Usage examples:
+#   make l3-apply                          # all hosts, all tags
+#   make l3-apply L3_LIMIT=blaine          # single host
+#   make l3-apply L3_LIMIT='blaine:patricia'  # Ansible limit expression
+#   make l3-apply L3_TAGS=base             # only "base" tag
+#   make l3-apply L3_TAGS=base,desktop     # multiple tags
+l3-apply: l3-render-inventory ## Converge Arch DevOps host (L3 via Ansible)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  L3_TAGS="$(L3_TAGS)"; \
+	  L3_LIMIT="$(L3_LIMIT)"; \
+	  extra=""; \
+	  [ -n "$$L3_TAGS" ] && extra="$$extra --tags $$L3_TAGS"; \
+	  [ -n "$$L3_LIMIT" ] && extra="$$extra --limit $$L3_LIMIT"; \
+	  ansible-playbook \
+	    -i artifacts/arch/devops/hosts.ini \
+	    ansible/playbooks/arch-devops.yml \
+	    $$extra'
 
 l4-smoke: ## Quick smoke test for the rebuilt DevOps host (with retry)
 	@echo "=== Running L4 Smoke Test (Ansible ping + uptime) ==="

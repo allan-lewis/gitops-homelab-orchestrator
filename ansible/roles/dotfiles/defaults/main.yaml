@@ -1,0 +1,21 @@
+# ansible/roles/dotfiles/defaults/main.yml
+
+# User whose dotfiles we are managing
+dotfiles_user: "lab"   # or override per-host/group
+
+# Compute the home directory for that user
+dotfiles_home: >-
+  {{ '/root' if dotfiles_user == 'root' else '/home/' ~ dotfiles_user }}
+
+dotfiles_repo: "https://github.com/allan-lewis/dotfiles.git"
+dotfiles_version: "main"
+
+# Repo lives inside that user's home
+dotfiles_dest: "{{ dotfiles_home }}/.dotfiles"
+
+dotfiles_stow_packages:
+  - common-zsh
+  - arch-zsh
+  - common-starship
+
+dotfiles_shell: "/usr/bin/zsh"
