@@ -184,7 +184,7 @@ l3-apply: l3-render-inventory ## Converge Arch DevOps host (L3 via Ansible)
 l4-smoke: ## Quick smoke test for the rebuilt DevOps host (with retry)
 	@echo "=== Running L4 Smoke Test (Ansible ping + uptime) ==="
 	@set -euo pipefail; \
-	  INI="ansible/inventories/arch_devops/hosts.ini"; \
+	  INI="artifacts/arch/devops/hosts.ini"; \
 	  echo "Using inventory: $$INI"; \
 	  RETRIES=10; \
 	  DELAY=6; \
