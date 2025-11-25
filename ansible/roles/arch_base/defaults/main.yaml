@@ -14,6 +14,7 @@ arch_base_packages:
   - fastfetch
   - stow
   - zsh
+  - starship
 
 arch_base_enable_timesyncd: true
 arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"
