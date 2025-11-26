@@ -5,7 +5,8 @@ locals {
   # Logical template refs -> actual manifest files
   template_manifests = {
     "arch/devops/stable" = "${path.module}/../../infra/arch/spec/vm-template-stable.json"
-    # "arch/devops/canary" = "${path.module}/../../infra/arch/devops/artifacts/template-canary.json"
+    "arch/docker/stable" = "${path.module}/../../infra/arch/spec/vm-template-stable.json"
+    # "arch/devops/canary" = "${path.module}/../../infra/arch/spec/vm-template-canary.json"
     # etc, later…
   }
 
