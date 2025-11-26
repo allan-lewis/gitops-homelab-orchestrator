@@ -24,6 +24,25 @@
     update: yes
     force: yes
 
+- name: "Ensure plugins directory exists under ZDOTDIR"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ dotfiles_user }}/.config/zsh/plugins"
+    state: directory
+    mode: "0755"
+
+- name: "Clone/update zsh plugins"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "/home/{{ dotfiles_user }}/.config/zsh/plugins/{{ item.name }}"
+    version: "HEAD"
+    update: yes
+    force: yes
+  loop: "{{ dotfiles_zsh_plugins }}"
+
 - name: "Apply stow packages"
   become: true
   become_user: "{{ dotfiles_user }}"

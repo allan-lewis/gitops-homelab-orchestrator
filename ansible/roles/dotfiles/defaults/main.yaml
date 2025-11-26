@@ -19,3 +19,9 @@ dotfiles_stow_packages:
   - common-starship
 
 dotfiles_shell: "/usr/bin/zsh"
+
+dotfiles_zsh_plugins:
+  - name: zsh-autosuggestions
+    repo: "https://github.com/zsh-users/zsh-autosuggestions.git"
+  - name: zsh-syntax-highlighting
+    repo: "https://github.com/zsh-users/zsh-syntax-highlighting.git"
