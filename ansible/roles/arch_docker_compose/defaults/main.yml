@@ -1,0 +1,12 @@
+---
+# Install docker engine from pacman?
+arch_docker_compose_install_docker: true
+
+# Package names (official Arch repos)
+arch_docker_compose_docker_pkg: docker
+arch_docker_compose_compose_pkg: docker-compose-plugin
+
+# Users that should be able to run docker without sudo
+# Adjust per host/group (e.g., ["lab", "allan", "devops"])
+arch_docker_compose_operator_users:
+  - lab

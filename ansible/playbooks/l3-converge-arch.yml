@@ -26,4 +26,5 @@
   become: true
 
   roles:
+    - { role: arch_docker_compose,        tags: ["arch_docker"] }
     - { role: arch_desktop,    when: arch_desktop_enabled | default(false), tags: ["arch_desktop"] }
