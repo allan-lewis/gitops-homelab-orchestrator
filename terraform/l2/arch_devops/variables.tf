@@ -1,6 +1,7 @@
 variable "storage" {
   description = "Proxmox datastore/storage ID for the boot disk (e.g., local-lvm)"
   type        = string
+  default     = "local-lvm"
 }
 
 variable "scsihw" {

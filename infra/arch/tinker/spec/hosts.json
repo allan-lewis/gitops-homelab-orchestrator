@@ -3,20 +3,20 @@
     "todash": {
       "ip": "192.168.86.69",
       "ssh_user": "lab",
-      "tags": ["terraform", "arch", "docker"],
+      "tags": ["terraform", "arch", "tinker"],
 
       "terraform": {
         "cpu": 2,
         "memory_mb": 2048,
         "disk_gb": 32,
-        "template_ref": "arch/docker/stable",
+        "template_ref": "arch/tinker/stable",
         "node": "polaris",
         "ipconfig": "ip=192.168.86.69/24,gw=192.168.86.1"
       },
 
       "ansible": {
         "python_interpreter": "/usr/bin/python3",
-        "groups": ["arch_docker"]
+        "groups": ["arch_tinker"]
       }
     }
   }

@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.6.0"
+
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
@@ -12,7 +13,7 @@ terraform {
   }
 }
 
-# Build the full API endpoint from your host (env via TF_VAR_pve_access_host)
+# Build the full API endpoint from your host (via TF_VAR_pve_access_host)
 locals {
   pve_api_url = "${chomp(var.pve_access_host)}/api2/json"
 }
