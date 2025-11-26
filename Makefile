@@ -97,14 +97,14 @@ l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
 	  persona="$${ORCHESTRATOR_PERSONA:-unknown_persona}"; \
 	  persona="$${persona%\"}"; \
 	  persona="$${persona#\"}"; \
-	  dest_dir="infra/$$os/$$persona/artifacts"; \
+	  dest_dir="infra/$$os/artifacts"; \
 	  mkdir -p "$$dest_dir"; \
 	  dest_file="$$dest_dir/vm-template-$$ts.json"; \
 	  cp "$$norm_out" "$$dest_file"; \
 	  echo "Saved timestamped manifest to $$dest_file"; \
 	  update_stable="$${L1_UPDATE_STABLE:-0}"; \
 	  if [ "$$update_stable" = "1" ]; then \
-	    spec_dir="infra/$$os/$$persona/spec"; \
+	    spec_dir="infra/$$os/spec"; \
 	    mkdir -p "$$spec_dir"; \
 	    ln -sf "../artifacts/$${dest_file##*/}" "$$spec_dir/vm-template-stable.json"; \
 	    echo "Updated stable symlink at $$spec_dir/vm-template-stable.json -> ../artifacts/$${dest_file##*/}"; \
