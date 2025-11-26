@@ -137,7 +137,7 @@ l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
 
 l2-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  cd terraform/l2/arch_devops; \
+	  cd terraform/l2/arch_tinker; \
 	  echo "Using Terraform in $$PWD"; \
 	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
 	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
