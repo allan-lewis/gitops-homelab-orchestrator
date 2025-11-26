@@ -161,7 +161,7 @@ l2-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
 # Render Ansible inventory from hosts.json → hosts.ini
 l3-render-inventory: ## Render L3 Ansible inventory from hosts.json
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/render-inventory-from-hosts-json.sh infra/arch/devops/spec/hosts.json artifacts/arch/devops/hosts.ini'
+	  scripts/render-inventory-from-hosts-json.sh infra/arch/tinker/spec/hosts.json artifacts/arch/tinker/hosts.ini'
 
 # Usage examples:
 #   make l3-apply                          # all hosts, all tags
@@ -177,8 +177,8 @@ l3-apply: l3-render-inventory ## Converge Arch DevOps host (L3 via Ansible)
 	  [ -n "$$L3_TAGS" ] && extra="$$extra --tags $$L3_TAGS"; \
 	  [ -n "$$L3_LIMIT" ] && extra="$$extra --limit $$L3_LIMIT"; \
 	  ansible-playbook \
-	    -i artifacts/arch/devops/hosts.ini \
-	    ansible/playbooks/arch-devops.yml \
+	    -i artifacts/arch/tinker/hosts.ini \
+	    ansible/playbooks/converge-arch.yml \
 	    $$extra'
 
 l4-smoke: l3-render-inventory ## Quick smoke test for the rebuilt DevOps host (with retry)
