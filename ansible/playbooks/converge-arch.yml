@@ -1,6 +1,5 @@
 ---
-# L3 — Arch convergence (dry-run friendly)
-- name: Arch DevOps Host Convergence
+- name: Baseline Arch convergence
   hosts: arch_devops:arch_tinker
   gather_facts: true
   become: true
@@ -10,8 +9,4 @@
     - { role: arch_hardening,  tags: ["arch_hardening"] }
     - { role: arch_services,   tags: ["arch_services"] }
     - { role: arch_monitoring, tags: ["arch_monitoring"] }
-    # - { role: arch_devops,     tags: ["arch_devops"] }
     - { role: dotfiles,        tags: ["arch_dotfiles"] }
-    # Optional desktop layer; toggle via group_vars (default false)
-    - { role: arch_aur,        when: arch_aur_enabled | default(false), tags: ["arch_aur"] }
-    - { role: arch_desktop,    when: arch_desktop_enabled | default(false), tags: ["arch_desktop"] }

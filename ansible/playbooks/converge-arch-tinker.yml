@@ -1,0 +1,9 @@
+---
+- name: Arch Tinker convergence
+  hosts: arch_tinker
+  gather_facts: true
+  become: true
+
+  roles:
+    - { role: arch_aur,        when: arch_aur_enabled | default(false), tags: ["arch_aur"] }
+    - { role: arch_desktop,    when: arch_desktop_enabled | default(false), tags: ["arch_desktop"] }
