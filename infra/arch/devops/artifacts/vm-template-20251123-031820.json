@@ -1,8 +1,0 @@
-{
-  "created_at": "2025-11-23T03:16:31Z",
-  "description": "Arch base (BIOS) with qemu-guest-agent, cloud-init; custom autorun ISO",
-  "name": "arch-base-20251123",
-  "node": "polaris",
-  "storage": "local-lvm",
-  "vmid": 101
-}
