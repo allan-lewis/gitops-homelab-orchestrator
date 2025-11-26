@@ -15,8 +15,6 @@ endif
 export ANSIBLE_CONFIG := $(CURDIR)/ansible.cfg
 export ANSIBLE_HOST_KEY_CHECKING := False
 export PIP_DISABLE_PIP_VERSION_CHECK := 1
-export ORCHESTRATOR_OS = "arch"
-export ORCHESTRATOR_PERSONA = "devops"
 export RUN
 
 L1_UPDATE_STABLE ?= 0
@@ -29,88 +27,27 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help clean l0-runway l1-init l1-validate l1-build l1-manifest l2-destroy l2-apply l3-render-inventory l3-apply l4-smoke
+.PHONY: help clean l0-runway l1-arch-build l2-destroy l2-apply l3-render-inventory l3-apply l4-smoke
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-clean: ## Remove all artifacts
-	@$(RUN) bash -lc 'rm -rf artifacts'
+## ---- GLOBAL TARGETS
+clean: ## Remove ALL artifacts across ALL layers
+	@$(RUN) bash -lc 'scripts/clean-artifacts.sh'
 
-l0-runway: ## Run the L0 runway (Proxmox validations via Ansible)
-	@$(RUN) bash -lc ' \
-	  mkdir -p artifacts; \
-	  ansible-playbook ansible/playbooks/l0_runway.yml'
+## ---- L0 TARGETS FOR ANY OR OR PERSONA
+l0-runway: ## L0 runway checks (OS/persona independent)
+	@$(RUN) bash -lc 'scripts/l0-runway.sh'
 
-l1-init: ## Packer init for L1 (Arch)
-	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer init ."
+## ---- L1 TARGETS FOR ALL PERSONAS FOR A SINGLE OS
 
-l1-validate: ## Validate L1 packer config (with Doppler env)
-	@$(RUN) bash -lc "set -euo pipefail; cd packer/arch; packer validate ."
-
-l1-build: ## Build the Arch template (Packer -> Proxmox) and capture VMID from packer-manifest.json
+# Usage examples:
+#   make l1-arch-build                     # full packer build + manifest
+#   make l1-arch-build SKIP_BUILD=1        # skip packer build, regenerate manifest only
+l1-arch-build: ## L1 build+manifest for Arch (Packer + Proxmox template manifest)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  mkdir -p artifacts; \
-	  echo "Running Packer build..."; \
-	  packer build packer/arch | tee artifacts/l1_packer.log; \
-	  manifest="artifacts/packer-manifest.json"; \
-	  [ -f "$$manifest" ] || { echo "Missing $$manifest; Packer did not emit a manifest" >&2; exit 1; }; \
-	  vmid="$$(jq -r '\''(.last_run_uuid) as $$id | (.builds[] | select(.packer_run_uuid==$$id) | .artifact_id) // (.builds[-1].artifact_id)'\'' "$$manifest")"; \
-	  case "$$vmid" in ""|*[!0-9]*) echo "Could not parse numeric VMID from $$manifest (got: $$vmid)" >&2; exit 1;; esac; \
-	  printf "%s\n" "$$vmid" > artifacts/l1_vmid; \
-	  echo "Captured VMID=$$vmid"'
-
-l1-manifest: ## Fetch VM config and save pretty JSON + normalized manifest
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  : "$${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"; \
-	  : "$${PM_TOKEN_ID:?Missing PM_TOKEN_ID}"; \
-	  : "$${PM_TOKEN_SECRET:?Missing PM_TOKEN_SECRET}"; \
-	  : "$${PVE_NODE:?Missing PVE_NODE}"; \
-	  command -v jq >/dev/null 2>&1 || { echo "jq is required for l1-manifest"; exit 1; }; \
-	  mkdir -p artifacts/l1_images; \
-	  [ -f artifacts/l1_vmid ] || { echo "artifacts/l1_vmid not found. Run make l1-build first."; exit 1; }; \
-	  vmid="$$(cat artifacts/l1_vmid)"; \
-	  AUTH="Authorization: PVEAPIToken=$${PM_TOKEN_ID}=$${PM_TOKEN_SECRET}"; \
-	  HOST="$${PVE_ACCESS_HOST%/}/api2/json"; \
-	  raw_out="artifacts/l1_images/qemu-$${vmid}-config.json"; \
-	  norm_out="artifacts/l1_images/template-manifest.json"; \
-	  echo "GET $$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config -> $$raw_out and $$norm_out"; \
-	  resp="$$(curl -fsS -H "$$AUTH" "$$HOST/nodes/$${PVE_NODE}/qemu/$$vmid/config")"; \
-	  echo "$$resp" | jq -S . > "$$raw_out"; \
-	  ctime="$$(echo "$$resp" | jq -r '\''.data.meta | split(",")[] | select(startswith("ctime=")) | split("=")[1]'\'' )"; \
-	  created_at=""; \
-	  if created_at="$$(date -u -r "$$ctime" "+%Y-%m-%dT%H:%M:%SZ" 2>/dev/null)"; then :; else \
-	    created_at="$$(date -u -d "@$$ctime" "+%Y-%m-%dT%H:%M:%SZ")"; \
-	  fi; \
-	  echo "$$resp" | jq -S \
-	    --arg vmid "$$vmid" \
-	    --arg node "$${PVE_NODE}" \
-	    --arg created_at "$$created_at" \
-	    '\''.data | {name: .name, node: $$node, vmid: ($$vmid | tonumber), storage: (.scsi0 // .ide1 | split(":")[0]), created_at: $$created_at, description: .description}'\'' \
-	    > "$$norm_out"; \
-	  echo "Wrote $$raw_out"; \
-	  echo "Wrote $$norm_out"; \
-	  ts="$$(date -u +"%Y%m%d-%H%M%S")"; \
-	  os="$${ORCHESTRATOR_OS:-unknown_os}"; \
-	  os="$${os%\"}"; \
-	  os="$${os#\"}"; \
-	  persona="$${ORCHESTRATOR_PERSONA:-unknown_persona}"; \
-	  persona="$${persona%\"}"; \
-	  persona="$${persona#\"}"; \
-	  dest_dir="infra/$$os/artifacts"; \
-	  mkdir -p "$$dest_dir"; \
-	  dest_file="$$dest_dir/vm-template-$$ts.json"; \
-	  cp "$$norm_out" "$$dest_file"; \
-	  echo "Saved timestamped manifest to $$dest_file"; \
-	  update_stable="$${L1_UPDATE_STABLE:-0}"; \
-	  if [ "$$update_stable" = "1" ]; then \
-	    spec_dir="infra/$$os/spec"; \
-	    mkdir -p "$$spec_dir"; \
-	    ln -sf "../artifacts/$${dest_file##*/}" "$$spec_dir/vm-template-stable.json"; \
-	    echo "Updated stable symlink at $$spec_dir/vm-template-stable.json -> ../artifacts/$${dest_file##*/}"; \
-	  else \
-	    echo "Skipping stable symlink update (L1_UPDATE_STABLE=$$update_stable)"; \
-	  fi'
+	  scripts/l1-build-and-manifest.sh packer/arch'
 
 l2-destroy: ## Plan/Destroy Arch DevOps VM via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
