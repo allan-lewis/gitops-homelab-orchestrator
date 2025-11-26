@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Default locations, override via args if you ever need to
-HOSTS_JSON="${1:?Usage: $0 </path/to/hosts.json> </path/to/hosts.ini>}"
-OUT_INI="${2:?Usage: $0 </path/to/hosts.json> </path/to/hosts.ini>}"
+# Usage:
+#   l3-inventory.sh <os> <persona>
+#
+# Examples:
+#   l3-inventory.sh arch devops
+#   l3-inventory.sh arch tinker
+#
+# Reads:
+#   infra/<os>/<persona>/spec/hosts.json
+# Writes:
+#   artifacts/<os>/<persona>/hosts.ini
+
+OS="${1:?Usage: $0 <os> <persona>}"
+PERSONA="${2:?Usage: $0 <os> <persona>}"
+
+HOSTS_JSON="infra/${OS}/${PERSONA}/spec/hosts.json"
+OUT_INI="artifacts/${OS}/${PERSONA}/hosts.ini"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required to render the Ansible inventory" >&2
@@ -54,3 +68,5 @@ mkdir -p "$(dirname "$OUT_INI")"
       )
   ' "$HOSTS_JSON"
 } > "$OUT_INI"
+
+echo "Wrote inventory: $OUT_INI"

@@ -1,9 +1,0 @@
----
-- name: Arch DevOps convergence
-  hosts: arch_devops
-  gather_facts: true
-  become: true
-
-  roles:
-    - { role: arch_devops,     tags: ["arch_devops"] }
-    - { role: arch_aur,        when: arch_aur_enabled | default(false), tags: ["arch_aur"] }

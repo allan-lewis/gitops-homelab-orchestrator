@@ -27,10 +27,21 @@ endif
 
 .DEFAULT_GOAL := help
 
-.PHONY: help clean l0-runway l1-arch-build \
-        l2-arch-devops-apply l2-arch-devops-destroy \
-        l2-arch-tinker-apply l2-arch-tinker-destroy \
-        l3-render-inventory l3-apply l4-smoke
+.PHONY: \
+  help \
+  clean \
+  l0-runway \
+  l1-arch-build \
+  l2-arch-devops-apply \
+  l2-arch-devops-destroy \
+  l2-arch-tinker-apply \
+  l2-arch-tinker-destroy \
+  l3-arch-devops-inventory \
+  l3-arch-tinker-inventory \
+  l3-arch-devops-converge \
+  l3-arch-tinker-converge \
+  l4-arch-devops-smoke \
+  l4-arch-tinker-smoke
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -55,10 +66,6 @@ l1-arch-build: ## L1 build+manifest for Arch (Packer + Proxmox template manifest
 
 ## ---- L2 TARGETS PER OS/PERSONA
 
-# Usage:
-#   make l2-<os>-<persona>-apply           # plan by default, APPLY=1 to actually apply
-#   make l2-<os>-<persona>-destroy         # destroy plan by default, APPLY=1 to destroy
-
 l2-arch-devops-apply: ## Plan/Apply Arch DevOps VM via Terraform (plan by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l2-terraform.sh terraform/l2/arch_devops apply'
@@ -75,51 +82,37 @@ l2-arch-tinker-destroy: ## Plan/Destroy Arch Tinker VM via Terraform (dry-run by
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l2-terraform.sh terraform/l2/arch_tinker destroy'
 
+## ---- L3 TARGETS PER OS/PERSONA
 
-# Render Ansible inventory from hosts.json → hosts.ini
-l3-render-inventory: ## Render L3 Ansible inventory from hosts.json
+l3-arch-devops-inventory: ## Render L3 Ansible inventory for Arch DevOps hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/render-inventory-from-hosts-json.sh infra/arch/tinker/spec/hosts.json artifacts/arch/tinker/hosts.ini'
+	  scripts/l3-inventory.sh arch devops'
+
+l3-arch-tinker-inventory: ## Render L3 Ansible inventory for Arch Tinker hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-inventory.sh arch tinker'
 
 # Usage examples:
-#   make l3-apply                          # all hosts, all tags
-#   make l3-apply L3_LIMIT=blaine          # single host
-#   make l3-apply L3_LIMIT='blaine:patricia'  # Ansible limit expression
-#   make l3-apply L3_TAGS=base             # only "base" tag
-#   make l3-apply L3_TAGS=base,desktop     # multiple tags
-l3-apply: l3-render-inventory ## Converge Arch DevOps host (L3 via Ansible)
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  L3_TAGS="$(L3_TAGS)"; \
-	  L3_LIMIT="$(L3_LIMIT)"; \
-	  extra=""; \
-	  [ -n "$$L3_TAGS" ] && extra="$$extra --tags $$L3_TAGS"; \
-	  [ -n "$$L3_LIMIT" ] && extra="$$extra --limit $$L3_LIMIT"; \
-	  ansible-playbook \
-	    -i artifacts/arch/tinker/hosts.ini \
-	    ansible/playbooks/converge-arch.yml \
-	    $$extra'
+#   make l3-<os>-<persona>-converge                          	# all hosts, all tags
+#   make l3-<os>-<persona>-converge L3_LIMIT=blaine          	# single host
+#   make l3-<os>-<persona>-converge L3_LIMIT='blaine:patricia'  # Ansible limit expression
+#   make l3-<os>-<persona>-converge L3_TAGS=base             	# only "base" tag
+#   make l3-<os>-<persona>-converge L3_TAGS=base,desktop     	# multiple tags
 
-l4-smoke: l3-render-inventory ## Quick smoke test for the rebuilt DevOps host (with retry)
-	@echo "=== Running L4 Smoke Test (Ansible ping + uptime) ==="
-	@set -euo pipefail; \
-	  INI="artifacts/arch/devops/hosts.ini"; \
-	  echo "Using inventory: $$INI"; \
-	  RETRIES=10; \
-	  DELAY=6; \
-	  COUNT=1; \
-	  echo "--- Waiting for SSH connectivity (retries: $$RETRIES, delay: $$DELAY sec) ---"; \
-	  until ansible -i "$$INI" all -m ping >/dev/null 2>&1; do \
-	    if [ $$COUNT -ge $$RETRIES ]; then \
-	      echo "❌ Smoke test failed: host not reachable after $$RETRIES attempts."; \
-	      exit 1; \
-	    fi; \
-	    echo "SSH not ready yet (attempt $$COUNT/$$RETRIES). Retrying in $$DELAY seconds..."; \
-	    sleep $$DELAY; \
-	    COUNT=$$((COUNT+1)); \
-	  done; \
-	  echo "✔️ Host reachable! Running full smoke tests..."; \
-	  echo "--- Ansible ping ---"; \
-	  ansible -i "$$INI" all -m ping; \
-	  echo "--- uptime ---"; \
-	  ansible -i "$$INI" all -a "uptime"; \
-	  echo "=== Smoke test complete ==="
+l3-arch-devops-converge: l3-arch-devops-inventory ## Converge Arch DevOps hosts (L3 via Ansible)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-converge.sh arch devops'
+
+l3-arch-tinker-converge: l3-arch-tinker-inventory ## Converge Arch Tinker hosts (L3 via Ansible)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-converge.sh arch tinker'
+
+## ---- L4 SMOKE TEST TARGETS
+
+l4-arch-devops-smoke: l3-arch-devops-inventory ## L4 smoke test for Arch DevOps hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l4-smoke.sh arch devops'
+
+l4-arch-tinker-smoke: l3-arch-tinker-inventory ## L4 smoke test for Arch Tinker hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l4-smoke.sh arch tinker'
