@@ -15,27 +15,26 @@
       },
 
       "ansible": {
-        "python_interpreter": "/usr/bin/python3",
-        "groups": ["arch_devops"]
+        "group_memberships": ["arch_devops"],
+
+        "vars": {}
+      }
+    }
+  },
+
+  "ansible": {
+    "all": {
+      "vars": {
+        "ansible_python_interpreter": "/usr/bin/python3"
       }
     },
-    "patricia": {
-      "ip": "192.168.86.99",
-      "ssh_user": "lab",
-      "tags": ["terraform", "arch", "devops"],
 
-      "terraform": {
-        "cpu": 2,
-        "memory_mb": 2048,
-        "disk_gb": 32,
-        "template_ref": "arch/devops/stable",
-        "node": "polaris",
-        "ipconfig": "ip=192.168.86.99/24,gw=192.168.86.1"
-      },
-
-      "ansible": {
-        "python_interpreter": "/usr/bin/python3",
-        "groups": ["arch_devops"]
+    "groups": {
+      "arch_devops": {
+        "vars": {
+          "ansible_environment": "staging",
+          "arch_devops_secret": { "env": "ARCH_DEVOPS_SECRET_VALUE" }
+        }
       }
     }
   }

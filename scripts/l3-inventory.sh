@@ -36,35 +36,108 @@ mkdir -p "$(dirname "$OUT_INI")"
   echo "# DO NOT COMMIT THIS FILE"
 
   jq -r '
-    # Build a map: group_name -> [host1, host2, ...]
+    . as $root
+    | ($root.hosts // {}) as $hosts
+    | ($root.ansible // {}) as $ansible
+    | ($ansible.groups // {}) as $group_defs
+
+    # Render a single var "name=value" with support for { "env": "VAR" }
+    |
+    def render_var(name; value):
+      if (value | type) == "object"
+         and (value | keys) == ["env"] then
+        "\(name)=\"{{ lookup('\''env'\'', '\''\((value.env|tostring))'\'') }}\""
+      else
+        "\(name)=\(value)"
+      end;
+
+    # Render all vars in a map as separate lines
+    def render_vars_block(vars):
+      vars
+      | to_entries[]
+      | render_var(.key; .value);
+
+    # Build a map: group_name -> [host1, host2, ...] from per-host group_memberships
     def groups_map:
-      .hosts
+      $hosts
       | to_entries
       | reduce .[] as $h (
           {};
-          reduce ($h.value.ansible.groups // [])[] as $g (
-            .;
-            .[$g] = ((.[$g] // []) + [$h.key])
-          )
+          ($h.value.ansible.group_memberships // []) as $gm
+          | reduce $gm[] as $g (
+              .;
+              .[$g] = ((.[$g] // []) + [$h.key])
+            )
         );
 
-    .hosts as $hosts
+    $hosts as $hosts
     | groups_map as $groups
+
+    # [all] section with full host lines + host-level vars (single line per host)
     | (
         "[all]"
       ),
       (
-        # Full host lines with connection vars
         $hosts
         | to_entries[]
-        | "\(.key) ansible_host=\(.value.ip) ansible_user=\(.value.ssh_user) ansible_python_interpreter=\(.value.ansible.python_interpreter)"
+        | . as $h
+        | ($h.value.ansible // {}) as $a
+        | ($a.vars // {}) as $hvars
+        | ($hvars
+            | to_entries
+            | map(render_var(.key; .value))
+          ) as $extra_list
+        | (
+            ["ansible_host=\($h.value.ip)",
+             "ansible_user=\($h.value.ssh_user)"]
+            +
+            (if $a.python_interpreter then
+               ["ansible_python_interpreter=\($a.python_interpreter)"]
+             else
+               []
+             end)
+            +
+            $extra_list
+          ) as $segments
+        | $h.key
+          + (if ($segments | length) > 0 then
+               " " + ($segments | join(" "))
+             else
+               ""
+             end)
       ),
+
+      # [all:vars] from ansible.all.vars (if present & non-empty)
       (
-        # One section per group, listing member hosts
+        ($ansible.all.vars // {}) as $allvars
+        | if ($allvars | length) > 0 then
+            "\n[all:vars]",
+            (render_vars_block($allvars))
+          else
+            empty
+          end
+      ),
+
+      # Group membership sections: one [group] per group with its hosts
+      (
         $groups
         | to_entries[]
         | "\n[" + .key + "]",
           ( .value[] )
+      ),
+
+      # Group vars sections: [group:vars] from ansible.groups.<name>.vars
+      (
+        $group_defs
+        | to_entries[]
+        | . as $gd
+        | ($gd.value.vars // {}) as $gvars
+        | if ($gvars | length) > 0 then
+            "\n[" + $gd.key + ":vars]",
+            (render_vars_block($gvars))
+          else
+            empty
+          end
       )
   ' "$HOSTS_JSON"
 } > "$OUT_INI"
