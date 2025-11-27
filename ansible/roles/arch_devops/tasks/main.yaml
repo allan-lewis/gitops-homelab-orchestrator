@@ -32,6 +32,17 @@
   tags: [devops, pkg-versions]
 
 ## INSTALL AND CONFIGURE DOPPLER
+- name: Determine whether a Doppler token is available
+  ansible.builtin.set_fact:
+    doppler_token_available: "{{ doppler_service_token | length > 0 }}"
+
+- name: Ensure doppler_service_token is set and non-empty
+  ansible.builtin.assert:
+    that:
+      - doppler_service_token is defined
+      - doppler_service_token | length > 0
+    fail_msg: "doppler_service_token must be set and non-empty"
+  
 - name: Download Doppler CLI install script
   become: true
   ansible.builtin.get_url:
@@ -57,10 +68,6 @@
 - name: Display Doppler version (first line)
   ansible.builtin.debug:
     msg: "doppler: {{ (doppler_version.stdout | default('')).split('\n')[0] }}"
-
-- name: Determine whether a Doppler token is available
-  ansible.builtin.set_fact:
-    doppler_token_available: "{{ doppler_service_token | length > 0 }}"
 
 - name: Configure Doppler service token for scoped directory
   become: true
@@ -96,6 +103,12 @@
     aws_creds_available: >-
       {{ (aws_access_key_id | length > 0) and
          (aws_secret_access_key | length > 0) }}
+
+- name: Fail if AWS credentials are missing or empty
+  ansible.builtin.assert:
+    that:
+      - aws_creds_available
+    fail_msg: "AWS credentials (aws_access_key_id + aws_secret_access_key) must be set and non-empty"
 
 - name: Create AWS config dir
   become: true
@@ -196,7 +209,7 @@
 - name: Extract Terraform outputs (raw)
   become: true
   become_user: "{{ ansible_user }}"
-  no_log: true
+  # no_log: true
   ansible.builtin.shell: |
     doppler run -- terraform output -raw {{ item }}
   args:
