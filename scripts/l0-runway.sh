@@ -6,4 +6,4 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 mkdir -p artifacts
-ansible-playbook ansible/playbooks/l0_runway.yml
+ansible-playbook ansible/playbooks/l0-runway.yml
