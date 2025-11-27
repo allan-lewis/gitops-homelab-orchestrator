@@ -1,12 +1,11 @@
 arch_devops_pacman_packages:
-  - ansible
   - python-kubernetes
   - terraform
   - kubectl
   - aws-cli-v2
   - talosctl
   - helm
-  # - starship - put this in dotfiles role
+  - ansible-core
 
 # Typically in role defaults or vars
 aws_cli_user: "{{ ansible_user }}"
@@ -17,5 +16,9 @@ aws_default_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') | default('us-east-1
 
 doppler_service_token: "{{ lookup('env', 'DOPPLER_SERVICE_TOKEN') | default('', true) }}"
 doppler_scope_dir: "/home/{{ ansible_user }}"  # example
-doppler_project: "default" 
-doppler_config: "dev"
+# doppler_project: "default" 
+# doppler_config: "dev"
+
+# ansible_environment: "devops|staging|production"
+# terraform_environment_dir: "/home/lab/gitops-homelab/terraform/environment/staging-k8s"
+# terraform_output_config_node: "beta"
