@@ -21,6 +21,7 @@ set -euo pipefail
 : "${PVE_NODE:?Missing PVE_NODE}"
 : "${PVE_STORAGE_VM:?Missing PVE_STORAGE_VM}"
 : "${PVE_SSH_USER:?Missing PVE_SSH_USER}"
+: "${PVE_SSH_IP:?Missing PVE_SSH_IP}"
 
 UBUNTU_CLOUD_IMAGE_URL="${UBUNTU_CLOUD_IMAGE_URL:-https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img}"
 UBUNTU_TEMPLATE_VMID="${UBUNTU_TEMPLATE_VMID:-9000}"
@@ -55,3 +56,12 @@ echo "==> Calculating SHA256..."
 sha256sum "${IMAGE_PATH}" | awk '{print $1}' > "${SHA_PATH}"
 SHA256="$(cat "${SHA_PATH}")"
 echo "SHA256: ${SHA256}"
+
+echo
+echo "==> Uploading cloud image to Proxmox..."
+SSH_HOST="${PVE_SSH_IP#*://}"
+SSH_HOST="${SSH_HOST%/}"
+
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  "${IMAGE_PATH}" \
+  "${PVE_SSH_USER}@${SSH_HOST}:/tmp/${IMAGE_NAME}"
