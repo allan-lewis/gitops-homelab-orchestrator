@@ -19,6 +19,26 @@
 
         "vars": {}
       }
+    },
+    "patricia": {
+      "ip": "192.168.86.99",
+      "ssh_user": "lab",
+      "tags": ["terraform", "arch", "devops"],
+
+      "terraform": {
+        "cpu": 2,
+        "memory_mb": 2048,
+        "disk_gb": 32,
+        "template_ref": "arch/devops/stable",
+        "node": "polaris",
+        "ipconfig": "ip=192.168.86.99/24,gw=192.168.86.1"
+      },
+
+      "ansible": {
+        "group_memberships": ["arch_devops"],
+
+        "vars": {}
+      }
     }
   },
 

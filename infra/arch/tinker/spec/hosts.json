@@ -15,8 +15,23 @@
       },
 
       "ansible": {
-        "python_interpreter": "/usr/bin/python3",
-        "groups": ["arch_tinker"]
+        "group_memberships": ["arch_tinker"],
+
+        "vars": {}
+      }
+    }
+  },
+
+  "ansible": {
+    "all": {
+      "vars": {
+        "ansible_python_interpreter": "/usr/bin/python3"
+      }
+    },
+
+    "groups": {
+      "arch_tinker": {
+        "vars": { }
       }
     }
   }

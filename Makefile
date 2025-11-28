@@ -31,7 +31,8 @@ endif
   help \
   clean \
   l0-runway \
-  l1-arch-build \
+  l1-arch-template \
+  l1-ubuntu-template \
   l2-arch-devops-apply \
   l2-arch-devops-destroy \
   l2-arch-tinker-apply \
@@ -57,12 +58,15 @@ l0-runway: ## L0 runway checks (OS/persona independent)
 ## ---- L1 TARGETS FOR ALL PERSONAS FOR A SINGLE OS
 
 # Usage examples:
-#   make l1-<os>-build                     # full packer build + manifest
-#   make l1-<os>-build SKIP_BUILD=1        # skip packer build, regenerate manifest only
-
-l1-arch-build: ## L1 build+manifest for Arch (Packer + Proxmox template manifest)
+#   make l1-arch-template                    # full packer build + manifest
+#   make l1-arch-template SKIP_BUILD=1        # skip packer build, regenerate manifest only
+l1-arch-template: ## L1 build+manifest for Arch (Packer + Proxmox template manifest)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l1-build-and-manifest.sh packer/arch'
+	  scripts/l1-template-arch.sh packer/arch'
+
+l1-ubuntu-template: ## L1 build+manifest for Ubuntu (Proxmox template manifest)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l1-template-ubuntu.sh'
 
 ## ---- L2 TARGETS PER OS/PERSONA
 
