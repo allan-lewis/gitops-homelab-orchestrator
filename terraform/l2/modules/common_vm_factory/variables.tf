@@ -44,3 +44,8 @@ variable "bridge" {
   type        = string
   default     = "vmbr0"
 }
+
+variable "agent_enabled" {
+  description = "Whether to enable the QEMU guest agent for VMs in this environment"
+  type        = bool
+}

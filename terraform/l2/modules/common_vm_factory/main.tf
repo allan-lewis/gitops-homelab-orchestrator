@@ -56,6 +56,9 @@ module "cloudinit" {
   # Create one VM per entry in local.vms (same pattern as old root)
   for_each = local.vms
 
+  # Guest agent
+  agent_enabled = var.agent_enabled
+
   # Identity / placement
   name       = each.key
   node       = each.value.node

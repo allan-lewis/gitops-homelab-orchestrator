@@ -37,6 +37,8 @@ endif
   l2-arch-devops-destroy \
   l2-arch-tinker-apply \
   l2-arch-tinker-destroy \
+  l2-ubuntu-tinker-apply \
+  l2-ubuntu-tinker-destroy \
   l3-arch-devops-inventory \
   l3-arch-tinker-inventory \
   l3-arch-devops-converge \
@@ -85,6 +87,14 @@ l2-arch-tinker-apply: ## Plan/Apply Arch Tinker VM via Terraform (plan by defaul
 l2-arch-tinker-destroy: ## Plan/Destroy Arch Tinker VM via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l2-terraform.sh terraform/l2/arch_tinker destroy'
+
+l2-ubuntu-tinker-apply: ## Plan/Apply Ubuntu Tinker VM via Terraform (plan by default)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_tinker apply'
+
+l2-ubuntu-tinker-destroy: ## Plan/Destroy Ubuntu Tinker VM via Terraform (dry-run by default)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_tinker destroy'
 
 ## ---- L3 TARGETS PER OS/PERSONA
 

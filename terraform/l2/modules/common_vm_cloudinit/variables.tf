@@ -67,3 +67,8 @@ variable "ssh_authorized_keys" {
   type        = list(string)
   default     = []
 }
+
+variable "agent_enabled" {
+  description = "Whether to enable the QEMU agent inside the VM"
+  type        = bool
+}

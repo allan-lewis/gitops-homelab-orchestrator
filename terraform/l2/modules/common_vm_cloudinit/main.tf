@@ -30,7 +30,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   agent {
-    enabled = true
+    enabled = var.agent_enabled
   }
 
   on_boot = true

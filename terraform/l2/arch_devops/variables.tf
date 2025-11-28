@@ -48,3 +48,10 @@ variable "pm_tls_insecure" {
   type        = bool
   default     = false
 }
+
+variable "agent_enabled" {
+  description = "Whether to enable the QEMU guest agent for VMs in this environment"
+  type        = bool
+  default     = true
+}
+

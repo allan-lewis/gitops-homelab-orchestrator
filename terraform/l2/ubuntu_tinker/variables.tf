@@ -60,5 +60,5 @@ variable "proxmox_vm_public_key" {
 variable "agent_enabled" {
   description = "Whether to enable the QEMU guest agent for VMs in this environment"
   type        = bool
-  default     = true
+  default     = false
 }

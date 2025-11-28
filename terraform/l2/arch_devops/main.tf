@@ -20,6 +20,7 @@ module "factory" {
   storage = var.storage
   scsihw  = var.scsihw
   bridge  = var.bridge
+  agent_enabled = var.agent_enabled
 
   # Cloud-init user + SSH keys applied to all hosts in this persona
   ci_user             = var.ci_user
