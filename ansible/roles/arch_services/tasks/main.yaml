@@ -135,5 +135,5 @@
     mode: "0644"
     content: |
       # Managed by Ansible - arch_services role
+      nameserver 192.168.86.1
       nameserver 1.1.1.1
-      nameserver 8.8.8.8
