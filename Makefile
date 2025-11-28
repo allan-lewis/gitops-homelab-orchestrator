@@ -106,6 +106,10 @@ l3-arch-tinker-inventory: ## Render L3 Ansible inventory for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh arch tinker'
 
+l3-ubuntu-tinker-inventory: ## Render L3 Ansible inventory for Ubuntu Tinker hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-inventory.sh ubuntu tinker'
+
 # Usage examples:
 #   make l3-<os>-<persona>-converge                          	# all hosts, all tags
 #   make l3-<os>-<persona>-converge L3_LIMIT=blaine          	# single host
@@ -130,3 +134,7 @@ l4-arch-devops-smoke: l3-arch-devops-inventory ## L4 smoke test for Arch DevOps 
 l4-arch-tinker-smoke: l3-arch-tinker-inventory ## L4 smoke test for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh arch tinker'
+
+l4-ubuntu-tinker-smoke: l3-ubuntu-tinker-inventory ## L4 smoke test for Ubuntu Tinker hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l4-smoke.sh ubuntu tinker'
