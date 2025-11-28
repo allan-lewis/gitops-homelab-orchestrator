@@ -1,10 +1,10 @@
 {
-  "created_at": "2025-11-28T21:40:12Z",
+  "created_at": "2025-11-28T23:02:30Z",
   "description": "Ubuntu cloud-image base with qemu-guest-agent and cloud-init drive",
   "name": "ubuntu-2204-cloud-base-20251128",
   "node": "polaris",
   "storage": "local-lvm",
-  "vmid": 114,
+  "vmid": 101,
   "cloud_image_url": "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img",
   "cloud_image_sha256": "2d88657a36372d211deabc5b5660d4ff8d7425f28ed2c98b6447a8110909f1d3"
 }
