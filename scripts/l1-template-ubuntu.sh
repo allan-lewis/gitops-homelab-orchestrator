@@ -151,7 +151,7 @@ ARTIFACT_DIR="${REPO_ROOT}/infra/ubuntu/artifacts"
 SPEC_DIR="${REPO_ROOT}/infra/ubuntu/spec"
 mkdir -p "${ARTIFACT_DIR}" "${SPEC_DIR}"
 
-MANIFEST_FILE="${ARTIFACT_DIR}/vm-template-$(date -u +"%Y%m%dT%H%M%SZ").json"
+MANIFEST_FILE="${ARTIFACT_DIR}/vm-template-$(date -u +"%Y%m%d-%H%M%S").json"
 
 cat > "${MANIFEST_FILE}" <<EOF
 {
