@@ -8,7 +8,7 @@
     - { role: arch_base,              tags: ["arch_base"] }
     - { role: arch_hardening,         tags: ["arch_hardening"] }
     - { role: arch_services,          tags: ["arch_services"] }
-    - { role: arch_monitoring,        tags: ["arch_monitoring"] }
+    # - { role: arch_monitoring,        tags: ["arch_monitoring"] }
     - { role: arch_shell,             tags: ["arch_dotfiles"] }
     - { role: arch_aur,               tags: ["arch_aur"], when: arch_aur_enabled | default(false) }
     - { role: arch_docker_compose,    tags: ["arch_docker"] }
@@ -28,3 +28,16 @@
 
   roles:
     - { role: arch_desktop,    when: arch_desktop_enabled | default(false), tags: ["arch_desktop"] }
+
+- name: Docker Compose monitoring services
+  hosts: docker_compose_monitoring
+  become: yes
+  gather_facts: yes
+  tags: [docker_compose_monitoring]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: monitoring
+        compose_source_type: template
+        compose_template_src: "templates/docker-compose/monitoring.compose.yaml.j2"
