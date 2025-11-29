@@ -7,6 +7,7 @@
   roles:
     - { role: ubuntu_base,       tags: ["ubuntu_base"] }
     - { role: ubuntu_hardening,  tags: ["ubuntu_hardening"] }
+    - { role: ubuntu_shell,      tags: ["ubuntu_shell"] }
     # - { role: arch_services,   tags: ["arch_services"] }
     # - { role: arch_monitoring, tags: ["arch_monitoring"] }
     # - { role: dotfiles,        tags: ["ubuntu_dotfiles"] }

@@ -1,0 +1,24 @@
+---
+# User whose dotfiles we are managing
+dotfiles_user: "{{ ansible_user }}" 
+
+# Compute the home directory for that user
+dotfiles_home: >-
+  {{ '/root' if dotfiles_user == 'root' else '/home/' ~ dotfiles_user }}
+
+dotfiles_repo: "https://github.com/allan-lewis/dotfiles.git"
+dotfiles_version: "main"
+
+# Repo lives inside that user's home
+dotfiles_dest: "{{ dotfiles_home }}/.dotfiles"
+
+dotfiles_stow_packages:
+  - common-zsh
+  # TODO - ubuntu-zsh
+  - common-starship
+
+dotfiles_zsh_plugins:
+  - name: zsh-autosuggestions
+    repo: "https://github.com/zsh-users/zsh-autosuggestions.git"
+  - name: zsh-syntax-highlighting
+    repo: "https://github.com/zsh-users/zsh-syntax-highlighting.git"

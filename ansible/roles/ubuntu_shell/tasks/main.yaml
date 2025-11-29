@@ -1,0 +1,59 @@
+---
+- name: Download and install Starship
+  shell: curl -sS https://starship.rs/install.sh | sh -s -- -y
+  args:
+    creates: /usr/local/bin/starship
+
+- name: Verify Starship installation
+  command: "starship --version"
+  register: starship_version_output
+  changed_when: false
+
+- name: Display Starship version
+  debug:
+    msg: "Starship installed successfully: {{ starship_version_output.stdout }}"
+
+- name: "Ensure dotfiles destination directory exists"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.file:
+    path: "{{ dotfiles_dest }}"
+    state: directory
+    mode: "0755"
+
+- name: "Clone or update dotfiles repo (HTTPS)"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.git:
+    repo: "{{ dotfiles_repo }}"
+    dest: "{{ dotfiles_dest }}"
+    version: "{{ dotfiles_version }}"
+    update: yes
+    force: yes
+
+- name: "Ensure plugins directory exists under ZDOTDIR"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ dotfiles_user }}/.config/zsh/plugins"
+    state: directory
+    mode: "0755"
+
+- name: "Clone/update zsh plugins"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "/home/{{ dotfiles_user }}/.config/zsh/plugins/{{ item.name }}"
+    version: "HEAD"
+    update: yes
+    force: yes
+  loop: "{{ dotfiles_zsh_plugins }}"
+
+- name: "Apply stow packages"
+  become: true
+  become_user: "{{ dotfiles_user }}"
+  ansible.builtin.command:
+    cmd: "stow {{ item }}"
+    chdir: "{{ dotfiles_dest }}"
+  loop: "{{ dotfiles_stow_packages }}"
