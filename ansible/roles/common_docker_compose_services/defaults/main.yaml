@@ -1,0 +1,31 @@
+# App identity (used for path defaults, logs, etc.)
+# compose_app_name: 
+
+# Where the compose project (compose.yml + .env) lives
+compose_project_dir: "/opt/docker-compose/{{ compose_app_name }}"
+compose_project_name: "{{ compose_app_name }}"  # implicit via dir unless you also set COMPOSE_PROJECT_NAME in .env
+
+# Source for docker-compose.yml: one of [url | file | template]
+compose_source_type: url
+compose_url: ""
+compose_file_src: ""            # e.g. files/app.compose.yml
+compose_template_src: ""        # e.g. templates/app.compose.yml.j2
+
+# .env content (key: value). Every key here is auto-validated as required.
+compose_env: {}
+
+# Host paths to validate (and optionally create/chown).
+# Each item:
+#   path (str, required)
+#   create (bool, default false)
+#   mode (str, default "0755")
+#   uid (int, optional), gid (int, optional)  -> skipped if nfs=true
+#   nfs (bool, default false)
+#   nfs_server (str, optional), nfs_path (str, optional)
+#   nfs_opts (str, default "rw,sync,hard,intr")
+compose_paths: []
+
+# Whether to aggressively pull/recreate when inputs change
+compose_pull_recreate: true
+
+compose_extra_templates: []

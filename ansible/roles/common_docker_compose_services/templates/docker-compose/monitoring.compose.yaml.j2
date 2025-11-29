@@ -1,0 +1,64 @@
+services:
+
+  node_exporter:
+    container_name: "node-exporter"
+    image: "quay.io/prometheus/node-exporter:latest"
+    restart: "unless-stopped"
+    ports: 
+      - "9100:9100/tcp"
+    volumes: 
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+
+  cadvisor:
+    container_name: "cadvisor"
+    image: "gcr.io/cadvisor/cadvisor:latest"
+    restart: "unless-stopped"
+    ports: 
+      - "32800:8080/tcp"
+    volumes: 
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  docker_proxy:
+    container_name: "docker_proxy"
+    image: "ghcr.io/tecnativa/docker-socket-proxy:latest"
+    restart: "unless-stopped"
+    ports: 
+      - "2375:2375/tcp"
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+    environment:
+      CONTAINERS: "1 | int"
+      POST: "0 | int" 
+
+  portainer_agent:
+    container_name: "portainer_agent"
+    image: "portainer/agent:latest"
+    restart: "unless-stopped"
+    ports: 
+      - "9002:9001/tcp"
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+
+  homelab-metrics:
+    image: "allanelewis/homelab-metrics:latest"
+    container_name: "homelab-metrics"
+    restart: "unless-stopped"
+    ports: 
+      - "9102:9102/tcp"
+{% if homelab_metrics_forward_url is defined %}
+    environment: 
+      FORWARD_METRICS_URL: "{{ homelab_metrics_forward_url }}"
+{% endif %}

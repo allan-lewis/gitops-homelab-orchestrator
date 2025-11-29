@@ -13,19 +13,23 @@
     # - { role: dotfiles,        tags: ["ubuntu_dotfiles"] }
     # - { role: arch_aur,        when: arch_aur_enabled | default(false), tags: ["arch_aur"] }
 
-# - name: Arch DevOps convergence
-#   hosts: arch_devops
-#   gather_facts: true
-#   become: true
+- name: Ubuntu Tinker convergence
+  hosts: ubuntu_tinker
+  gather_facts: true
+  become: true
 
-#   roles:
-#     - { role: arch_devops,     tags: ["arch_devops"] }
+  roles:
+    - { role: ubuntu_docker_compose,        tags: ["ubuntu_docker"] }
 
-# - name: Arch Tinker convergence
-#   hosts: arch_tinker
-#   gather_facts: true
-#   become: true
+- name: Docker Compose monitoring services
+  hosts: docker_compose_monitoring
+  become: yes
+  gather_facts: yes
+  tags: [docker_compose_monitoring]
 
-#   roles:
-#     - { role: arch_docker_compose,        tags: ["arch_docker"] }
-#     - { role: arch_desktop,    when: arch_desktop_enabled | default(false), tags: ["arch_desktop"] }
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: monitoring
+        compose_source_type: template
+        compose_template_src: "templates/docker-compose/monitoring.compose.yaml.j2"

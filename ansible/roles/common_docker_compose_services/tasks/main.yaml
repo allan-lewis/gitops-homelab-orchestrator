@@ -1,0 +1,185 @@
+---
+- name: Ensure project dir exists
+  ansible.builtin.file:
+    path: "{{ compose_project_dir }}"
+    state: directory
+    mode: "0750"
+
+# --- Auto-check: every key in compose_env must be defined and non-empty ---
+- name: Fail if any compose_env entry is undefined or empty
+  ansible.builtin.fail:
+    msg: "compose_env variable '{{ item.key }}' is undefined or empty."
+  when: (item.value is not defined) or (item.value | string | length == 0)
+  loop: "{{ (compose_env | default({})) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# --- Prepare local paths ---
+# Build a list of paths that should be created
+- name: Collect paths that should be created (non-NFS only)
+  ansible.builtin.set_fact:
+    _compose_paths_create: "{{ (_compose_paths_create | default([])) + [item] }}"
+  loop: "{{ compose_paths | default([]) }}"
+  when:
+    - (item.create | default(false) | bool)
+    - not (item.nfs | default(false) | bool)
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Show paths that will be created
+  ansible.builtin.debug:
+    msg: "Will ensure directory exists: {{ item.path }} (mode={{ item.mode | default('0755') }})"
+  loop: "{{ _compose_paths_create | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Create mountpoints (local paths only when create=true)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.uid | default(omit) }}"
+    group: "{{ item.gid | default(omit) }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ _compose_paths_create | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Gather NFS items (nfs=true and has server/path)
+- name: Collect NFS paths to mount
+  ansible.builtin.set_fact:
+    _compose_paths_nfs: "{{ (_compose_paths_nfs | default([])) + [item] }}"
+  loop: "{{ compose_paths | default([]) }}"
+  when:
+    - (item.nfs | default(false) | bool)
+    - (item.nfs_server is defined) and (item.nfs_server | length > 0)
+    - (item.nfs_path   is defined) and (item.nfs_path   | length > 0)
+  loop_control:
+    label: "{{ item.path }}"
+
+# Log what we’re about to mount
+- name: Show NFS paths that will be mounted
+  ansible.builtin.debug:
+    msg: "Will mount NFS: {{ item.nfs_server }}:{{ item.nfs_path }} -> {{ item.path }} (opts={{ item.nfs_opts | default('rw,sync,hard,intr') }})"
+  loop: "{{ _compose_paths_nfs | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Check current state of mountpoints
+- name: Stat NFS mountpoints
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+    follow: false
+  register: _nfs_stats
+  loop: "{{ _compose_paths_nfs | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Create mountpoints ONLY when missing (no ownership/perm changes on existing/mounted paths)
+- name: Create missing NFS mountpoints (no chown/chmod on existing)
+  ansible.builtin.file:
+    path: "{{ item.item.path }}"
+    state: directory
+    mode: "{{ item.item.mode | default('0755') }}"
+  loop: "{{ _nfs_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  when: not item.stat.exists
+
+# Fail only if the path exists but is not a directory
+- name: Fail if NFS mountpoint exists but is not a directory
+  ansible.builtin.fail:
+    msg: "NFS mountpoint {{ item.item.path }} exists but is not a directory."
+  loop: "{{ _nfs_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  when: item.stat.exists and not item.stat.isdir
+
+# Mount (and persist in /etc/fstab)
+- name: Mount NFS paths
+  ansible.posix.mount:
+    path: "{{ item.path }}"
+    src: "{{ item.nfs_server }}:{{ item.nfs_path }}"
+    fstype: nfs
+    opts: "{{ item.nfs_opts | default('rw,sync,hard,intr') }}"
+    state: mounted
+  loop: "{{ _compose_paths_nfs | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: _nfs_mount_results
+
+# Verify mount actually active and of NFS type
+- name: Verify NFS mounts are active
+  ansible.builtin.command: "findmnt -T {{ item.path }} -no FSTYPE,SOURCE"
+  changed_when: false
+  register: _nfs_findmnt
+  loop: "{{ _compose_paths_nfs | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Fail if path is not an active NFS mount
+  ansible.builtin.fail:
+    msg: >-
+      {{ item.item.path }} is not an active NFS mount (findmnt output: {{ item.stdout | default('') }}).
+      Expected {{ ( _compose_paths_nfs | selectattr('path','equalto', item.item.path) | first ).nfs_server }}:
+              {{ ( _compose_paths_nfs | selectattr('path','equalto', item.item.path) | first ).nfs_path }}.
+  loop: "{{ _nfs_findmnt.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  when: item.stdout is not regex('^(nfs|nfs4)\\s')
+
+# Render any extra templates
+- name: Render extra project templates
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.uid | default(0) }}"
+    group: "{{ item.gid | default(0) }}"
+    mode: "{{ item.mode | default('0644') }}"
+  loop: "{{ compose_extra_templates | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  notify: restart compose stack
+
+# --- Compose source (url | file | template) ---
+- name: Fetch compose from URL
+  ansible.builtin.get_url:
+    url: "{{ compose_url }}"
+    dest: "{{ compose_project_dir }}/docker-compose.yml"
+    mode: "0644"
+  when: compose_source_type == 'url'
+  notify: restart compose stack
+
+- name: Copy compose from local file
+  ansible.builtin.copy:
+    src: "{{ compose_file_src }}"
+    dest: "{{ compose_project_dir }}/docker-compose.yml"
+    mode: "0644"
+  when: compose_source_type == 'file'
+  notify: restart compose stack
+
+- name: Render compose from template
+  ansible.builtin.template:
+    src: "{{ compose_template_src }}"
+    dest: "{{ compose_project_dir }}/docker-compose.yml"
+    mode: "0644"
+  when: compose_source_type == 'template'
+  notify: restart compose stack
+
+# --- .env rendering (optional) ---
+- name: Render .env for compose (if provided)
+  ansible.builtin.copy:
+    dest: "{{ compose_project_dir }}/.env"
+    mode: "0640"
+    content: |-
+      {% for k, v in compose_env.items() %}
+      {{ k }}={{ v }}
+      {% endfor %}
+  when: compose_env | length > 0
+  notify: restart compose stack
+
+# --- Deploy ---
+- name: Ensure stack is present
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: present
+    remove_orphans: true

@@ -15,7 +15,7 @@
       },
 
       "ansible": {
-        "group_memberships": ["ubuntu_tinker"],
+        "group_memberships": ["ubuntu_tinker", "docker_compose_monitoring"],
 
         "vars": {}
       }

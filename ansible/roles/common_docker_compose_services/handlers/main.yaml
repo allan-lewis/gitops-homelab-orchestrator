@@ -1,0 +1,9 @@
+---
+- name: restart compose stack
+  listen: restart compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    pull: "{{ compose_pull_recreate | ternary('always','policy') }}"
+    recreate: "{{ compose_pull_recreate | ternary('always','auto') }}"
+    remove_orphans: true
+    state: present
