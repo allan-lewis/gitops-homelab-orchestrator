@@ -14,7 +14,7 @@ dotfiles_dest: "{{ dotfiles_home }}/.dotfiles"
 
 dotfiles_stow_packages:
   - common-zsh
-  # TODO - ubuntu-zsh
+  - ubuntu-zsh
   - common-starship
 
 dotfiles_zsh_plugins:

@@ -41,8 +41,11 @@ endif
   l2-ubuntu-tinker-destroy \
   l3-arch-devops-inventory \
   l3-arch-tinker-inventory \
+  l3-ubuntu-legacy-inventory \
+  l3-ubuntu-tinker-inventory \
   l3-arch-devops-converge \
   l3-arch-tinker-converge \
+  l3-ubuntu-legacy-converge \
   l3-ubuntu-tinker-converge \
   l4-arch-devops-smoke \
   l4-arch-tinker-smoke \
@@ -108,6 +111,10 @@ l3-arch-tinker-inventory: ## Render L3 Ansible inventory for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh arch tinker'
 
+l3-ubuntu-legacy-inventory: ## Render L3 Ansible inventory for Ubuntu Legacy hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-inventory.sh ubuntu legacy'
+
 l3-ubuntu-tinker-inventory: ## Render L3 Ansible inventory for Ubuntu Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh ubuntu tinker'
@@ -127,7 +134,11 @@ l3-arch-tinker-converge: l3-arch-tinker-inventory ## Converge Arch Tinker hosts 
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh arch tinker'
 
-l3-ubuntu-tinker-converge: l3-ubuntu-tinker-inventory ## Converge Arch Tinker hosts (L3 via Ansible)
+l3-ubuntu-legacy-converge: l3-ubuntu-legacy-inventory ## Converge Ubuntu Tinker hosts (L3 via Ansible)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-converge.sh ubuntu legacy'
+
+l3-ubuntu-tinker-converge: l3-ubuntu-tinker-inventory ## Converge Ubuntu Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu tinker'
 

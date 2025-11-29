@@ -1,0 +1,109 @@
+{
+  "hosts": {
+    "barlow": {
+      "ip": "192.168.86.225",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "callahan": {
+      "ip": "192.168.86.215",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "carrie": {
+      "ip": "192.168.86.228",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "cujo": {
+      "ip": "192.168.86.226",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "flagg": {
+      "ip": "192.168.86.205",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "misery": {
+      "ip": "192.168.86.227",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    },
+    "sheemie": {
+      "ip": "192.168.86.229",
+      "ssh_user": "lab",
+      "tags": ["ubuntu", "legacy"],
+
+      "terraform": {},
+
+      "ansible": {
+        "group_memberships": ["ubuntu_legacy"],
+
+        "vars": {}
+      }
+    }
+  },
+
+  "ansible": {
+    "all": {
+      "vars": {
+        "ansible_python_interpreter": "/usr/bin/python3"
+      }
+    },
+
+    "groups": {
+      "ubuntu_tinker": {
+        "vars": { }
+      }
+    }
+  }
+}

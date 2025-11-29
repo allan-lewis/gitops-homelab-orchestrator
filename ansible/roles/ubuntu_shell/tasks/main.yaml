@@ -1,4 +1,24 @@
 ---
+- name: Ensure required packages for adding PPAs are present
+  ansible.builtin.apt:
+    name:
+      - software-properties-common
+      - ca-certificates
+    state: present
+    update_cache: true
+
+- name: Add Fastfetch official PPA
+  ansible.builtin.apt_repository:
+    repo: ppa:zhangsongcui3371/fastfetch
+    state: present
+    filename: fastfetch
+
+- name: Install fastfetch
+  ansible.builtin.apt:
+    name: fastfetch
+    state: present
+    update_cache: true
+
 - name: Download and install Starship
   shell: curl -sS https://starship.rs/install.sh | sh -s -- -y
   args:
