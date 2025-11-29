@@ -12,7 +12,7 @@ set -euo pipefail
 #   PVE_SSH_IP        e.g. 10.0.0.10 (direct IP, not reverse proxy)
 #
 # Optional env:
-#   UBUNTU_CLOUD_IMAGE_URL  (default: Jammy cloud image)
+#   UBUNTU_CLOUD_IMAGE_URL  (default: Noble cloud image)
 #   UBUNTU_TEMPLATE_VMID    (if unset, we call pvesh get /cluster/nextid)
 #   UBUNTU_TEMPLATE_NAME    (default: ubuntu-2204-cloud-base-YYYYMMDD)
 #   UPDATE_STABLE           (set to 1 to update vm-template-stable.json)
@@ -24,7 +24,7 @@ set -euo pipefail
 : "${PVE_SSH_USER:?Missing PVE_SSH_USER}"
 : "${PVE_SSH_IP:?Missing PVE_SSH_IP}"
 
-UBUNTU_CLOUD_IMAGE_URL="${UBUNTU_CLOUD_IMAGE_URL:-https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img}"
+UBUNTU_CLOUD_IMAGE_URL="${UBUNTU_CLOUD_IMAGE_URL:-https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img}"
 # If name not provided, include date so multiple runs don't collide
 UBUNTU_TEMPLATE_NAME="${UBUNTU_TEMPLATE_NAME:-ubuntu-2204-cloud-base-$(date -u +"%Y%m%d")}"
 UPDATE_STABLE="${UPDATE_STABLE:-0}"

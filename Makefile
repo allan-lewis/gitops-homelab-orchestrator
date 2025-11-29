@@ -43,8 +43,10 @@ endif
   l3-arch-tinker-inventory \
   l3-arch-devops-converge \
   l3-arch-tinker-converge \
+  l3-ubuntu-tinker-converge \
   l4-arch-devops-smoke \
-  l4-arch-tinker-smoke
+  l4-arch-tinker-smoke \
+  l4-ubuntu-tinker-smoke
 
 help: ## Show targets
 	@awk 'BEGIN{FS=":.*##"; printf "\nTargets:\n"} /^[a-zA-Z0-9_\-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -124,6 +126,10 @@ l3-arch-devops-converge: l3-arch-devops-inventory ## Converge Arch DevOps hosts 
 l3-arch-tinker-converge: l3-arch-tinker-inventory ## Converge Arch Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh arch tinker'
+
+l3-ubuntu-tinker-converge: l3-ubuntu-tinker-inventory ## Converge Arch Tinker hosts (L3 via Ansible)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l3-converge.sh ubuntu tinker'
 
 ## ---- L4 SMOKE TEST TARGETS
 

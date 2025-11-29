@@ -1,0 +1,65 @@
+---
+- name: Create user and add to sudo group.
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    password_lock: yes
+    shell: /bin/zsh
+    groups:
+      - sudo
+    append: yes
+    state: present
+
+- name: Add user to the sudoers list.
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^{{ ansible_user }}'
+    line: '{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: Restrict allowed ssh users.
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^AllowUsers'
+    line: 'AllowUsers {{ ansible_user }}'
+    state: present
+  register: ssh_allow_users
+
+- name: Disable root login access.
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^(#)?PermitRootLogin \w*$'
+    line: 'PermitRootLogin no'
+    state: present
+  register: ssh_disable_root
+
+- name: Disable SSH password authentication.
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^#?\s*PasswordAuthentication\s'
+    line: 'PasswordAuthentication no'
+    state: present
+  register: ssh_disable_password
+
+- name: Update SSH host key algorithms.
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: 'HostKeyAlgorithms'
+    line: 'HostKeyAlgorithms +ssh-rsa'
+    state: present
+  when: ansible_facts['distribution'] == 'Ubuntu'
+  register: ssh_host_key
+
+- name: Update SSH public key accepted algorithms.
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: 'PubkeyAcceptedAlgorithms'
+    line: 'PubkeyAcceptedAlgorithms +ssh-rsa'
+    state: present
+  when: ansible_facts['distribution'] == 'Ubuntu'
+  register: ssh_pub_key
+
+- name: Restart the SSH service.
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+  when: (ssh_allow_users is changed) or (ssh_disable_root is changed) or (ssh_disable_password is changed) or (ssh_host_key is changed) or (ssh_pub_key is changed)

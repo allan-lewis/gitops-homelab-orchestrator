@@ -1,0 +1,22 @@
+---
+- name: Set the time zone.
+  community.general.timezone:
+    name: "{{ gitops_tz | default('America/New_York') }}"
+
+- name: Perform an apt update.
+  ansible.builtin.apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+- name: Perform an apt upgrade.
+  ansible.builtin.apt: upgrade=dist force_apt_get=yes
+
+- name: Install necessary dependencies.
+  ansible.builtin.apt:
+    pkg:
+      - unzip
+      - zsh
+      - curl
+      - stow
+      - net-tools
+      - nfs-common
+    state: latest
+    update_cache: true
