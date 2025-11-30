@@ -3,12 +3,6 @@
 l3_enable_desktop: false
 
 # Sample services config
-# arch_services_pacman_packages:
-#   - cronie
-
-# arch_services_enable:
-#   - cronie
-
 # arch_services_linger_users:
 #   - "{{ arch_hardening_user | default('lab') }}"
 

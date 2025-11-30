@@ -1,0 +1,24 @@
+---
+- name: Ensure backup.conf.d exists (in case main role hasn't run yet)
+  ansible.builtin.file:
+    path: "{{ backup_runner_base_dir }}/backup.conf.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Validate required vars for add_fragment
+  ansible.builtin.assert:
+    that:
+      - backup_fragment_name is defined
+      - backup_fragment_pairs is defined
+      - (backup_fragment_pairs | length) > 0
+    fail_msg: "backup_fragment_name and non-empty backup_fragment_pairs are required."
+
+- name: Render backup fragment
+  ansible.builtin.template:
+    src: backup-fragment.conf.j2
+    dest: "{{ backup_runner_base_dir }}/backup.conf.d/{{ backup_fragment_name }}"
+    owner: root
+    group: root
+    mode: "0640"

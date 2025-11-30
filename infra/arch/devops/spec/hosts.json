@@ -17,7 +17,13 @@
       "ansible": {
         "group_memberships": ["arch_devops", "docker_compose_monitoring"],
 
-        "vars": {}
+        "vars": {
+          "ansible_environment": "staging",
+          "doppler_config": "stg",
+          "doppler_project": "default",
+          "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_STAGING" },
+          "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/staging-k8s"
+        }
       }
     },
     "patricia": {
@@ -37,7 +43,13 @@
       "ansible": {
         "group_memberships": ["arch_devops", "docker_compose_monitoring"],
 
-        "vars": {}
+        "vars": {
+          "ansible_environment": "production",
+          "doppler_config": "prd",
+          "doppler_project": "default",
+          "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_PRODUCTION" },
+          "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/production-k8s"
+        }
       }
     }
   },
@@ -51,13 +63,7 @@
 
     "groups": {
       "arch_devops": {
-        "vars": {
-          "ansible_environment": "staging",
-          "doppler_config": "stg",
-          "doppler_project": "orchestrator",
-          "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_STAGING" },
-          "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/staging-k8s"
-        }
+        "vars": {}
       }
     }
   }

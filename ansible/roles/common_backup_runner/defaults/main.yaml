@@ -1,0 +1,14 @@
+---
+backup_runner_base_dir: /etc/gitops-homelab/backup
+backup_runner_script_path: /usr/local/bin/run-backups.sh
+backup_runner_log_path: /var/log/backup-run.log
+
+# Safe rsync defaults
+backup_runner_rsync_flags: "-aHAX --numeric-ids --delete-delay --partial --partial-dir=.rsync-partial --human-readable --sparse --mkpath"
+
+# Per-host knobs (can be overridden in host_vars/<host>.yml)
+backup_runner_healthchecks_url: ""         # default: no ping
+# backup_runner_healthchecks_status: ""    # default: no gatus healthcheck
+backup_runner_cron_enabled: true           # enable cron by default
+backup_runner_cron_hour: "*"               # default: every hour
+backup_runner_cron_minute: "0"             # default: at minute 0

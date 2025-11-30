@@ -1,6 +1,6 @@
 ---
 arch_base_packages:
-  - python        # ensure Ansible runtime
+  - python
   - ca-certificates
   - openssh
   - curl
@@ -17,6 +17,7 @@ arch_base_packages:
   - starship
   - neovim
   - bind
+  - rsync
 
 arch_base_enable_timesyncd: true
 arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"

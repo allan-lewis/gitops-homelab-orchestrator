@@ -1,0 +1,24 @@
+# This is a backup fragment for the backup_runner role.
+# 
+# Format:
+#   SRC :: DEST
+# 
+# - SRC: local source path (directory to back up)
+# - DEST: destination path (can be a local path or remote rsync target, e.g. user@host:/path)
+# - Lines starting with '#' or blank lines are ignored.
+#
+# All fragment files in {{ backup_runner_base_dir }}/backup.conf.d/*.conf
+# are concatenated together (in sorted order) by the backup runner script.
+# Each line represents a backup "pair". Failures in one pair do not prevent
+# other pairs from running.
+#
+# Example:
+#   /var/lib/docker/volumes/myapp_db/_data :: nas:/tank/backups/myapp/db
+#   /home :: /mnt/backup/home
+
+{% if backup_fragment_header -%}
+# {{ backup_fragment_header }}
+{% endif -%}
+{% for pair in backup_fragment_pairs -%}
+{{ pair.src }} :: {{ pair.dest }}
+{% endfor %}

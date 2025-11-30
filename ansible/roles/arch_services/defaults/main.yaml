@@ -1,14 +1,14 @@
 ---
 # 1) Packages from the Arch repos (pacman)
-arch_services_pacman_packages: []
+arch_services_pacman_packages:
+  - cronie
 #  - openssh
-#  - cronie
 #  - ufw
 
 # 2) Plain service enable/start by name (already installed)
-arch_services_enable: []
+arch_services_enable:
+  - cronie
 #  - sshd
-#  - cronie
 
 # 3) Optional: drop in custom unit/timer files (templated)
 #    Each item: { name: "my.service", dest: "/etc/systemd/system/my.service", template: "my.service.j2", mode: "0644" }

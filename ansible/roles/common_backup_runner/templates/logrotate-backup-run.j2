@@ -1,0 +1,21 @@
+{{ backup_runner_log_path }} {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    dateext
+    dateformat -%Y%m%d
+    create 0644 root root
+    su root root
+
+    # Normally, copytruncate is NOT needed here because the backup-run script
+    # is short-lived: it opens the log, writes, and closes on exit.
+    #
+    # If you ever adapt this config for a long-running process that does not
+    # reopen log files on rotation, you may need to enable it.
+    #
+    # Uncomment if required:
+    # copytruncate
+}

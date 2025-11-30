@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# backup runner — reads backup.conf and backup.conf.d/*.conf, rsyncs pairs, and conditionally pings Healthchecks
+# Template vars from Ansible:
+#  - backup_runner_base_dir
+#  - backup_runner_log_path
+
+set -uo pipefail
+
+# Load environment file if present
+if [[ -f "{{ backup_runner_base_dir }}/backup.env" ]]; then
+  # shellcheck disable=SC1091
+  . "{{ backup_runner_base_dir }}/backup.env"
+fi
+
+LOG_PATH="${LOG_PATH:-{{ backup_runner_log_path }}}"
+CONF_PATH="${CONF_PATH:-{{ backup_runner_base_dir }}/backup.conf}"
+CONF_DIR="{{ backup_runner_base_dir }}/backup.conf.d"
+HEALTHCHECKS_URL="${HEALTHCHECKS_URL:-}"
+# Sensible, safe default flags if unset (your role sets these via backup.env)
+RSYNC_FLAGS="${RSYNC_FLAGS:- -aHAX --numeric-ids --delete-delay --partial --partial-dir=.rsync-partial --human-readable --sparse --mkpath }"
+
+timestamp() { date +"%Y-%m-%d %H:%M:%S%z"; }
+log() { echo "$(timestamp) | $*" | tee -a "$LOG_PATH"; }
+
+# Run a single src->dest rsync, continuing on error
+run_pair() {
+  local src="$1" dest="$2"
+  local src_norm dest_norm
+  src_norm="${src%/}/"
+  dest_norm="${dest%/}/"
+
+  log "START  | rsync ${RSYNC_FLAGS} '${src_norm}' -> '${dest_norm}'"
+  # shellcheck disable=SC2086
+  rsync ${RSYNC_FLAGS} --progress "${src_norm}" "${dest_norm}" 2>&1 | tee -a "$LOG_PATH"
+  local rc=${PIPESTATUS[0]}
+
+  if [[ $rc -eq 0 ]]; then
+    log "OK     | ${src_norm} -> ${dest_norm}"
+  else
+    log "ERROR  | ${src_norm} -> ${dest_norm} | exit=$rc"
+  fi
+  return $rc
+}
+
+# Process all valid lines from a given config file (absolute path), logging the file path
+process_file() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+
+  log "FILE   | Processing config: $file"
+
+  # Read non-empty, non-comment lines
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip comments/blank
+    [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
+
+    # Split on the *first* occurrence of '::' and trim whitespace on each side
+    if [[ "$line" =~ ^[[:space:]]*(.+)[[:space:]]+::[[:space:]]+(.+)[[:space:]]*$ ]]; then
+      local src="${BASH_REMATCH[1]}"
+      local dest="${BASH_REMATCH[2]}"
+
+      # Early sanity check for the classic "leading colon" issue
+      if [[ "$dest" == :* ]]; then
+        log "WARN   | destination begins with ':' — check delimiter in line: '$line'"
+      fi
+
+      ((pairs++))
+      run_pair "$src" "$dest" || ((failures++))
+    else
+      log "WARN   | malformed pair (expected 'SRC :: DEST'): '$line'"
+      ((failures++))
+    fi
+  done < "$file"
+}
+
+main() {
+  pairs=0
+  failures=0
+
+  log "===== Backup run started ====="
+
+  # Process monolithic config first (if present)
+  if [[ -f "$CONF_PATH" ]]; then
+    process_file "$CONF_PATH"
+  fi
+
+  # Then process each fragment in conf.d, in sorted order; log each absolute path
+  if [[ -d "$CONF_DIR" ]]; then
+    # Use find -print0 + sort -z to ensure stable order and handle spaces
+    while IFS= read -r -d '' f; do
+      process_file "$f"
+    done < <(find "$CONF_DIR" -type f -name '*.conf' -print0 | sort -z)
+  fi
+
+  if [[ ${pairs:-0} -eq 0 ]]; then
+    log "INFO   | No backup pairs configured."
+    all_ok=1
+  else
+    all_ok=$(( failures == 0 ? 1 : 0 ))
+  fi
+
+  # Conditionally ping Healthchecks (success only, or none configured)
+  if [[ -n "$HEALTHCHECKS_URL" ]]; then
+    if [[ $all_ok -eq 1 ]]; then
+      curl -fsS --max-time 10 "$HEALTHCHECKS_URL" >/dev/null 2>&1 \
+        && log "PING   | Healthchecks success ping sent" \
+        || log "WARN   | Failed to ping Healthchecks"
+    else
+      log "SKIP   | Not pinging Healthchecks (one or more backups failed)"
+    fi
+  fi
+
+  if [[ $all_ok -eq 1 ]]; then
+    log "===== Backup run finished (OK) ====="
+    exit 0
+  else
+    log "===== Backup run finished (FAIL) ====="
+    exit 1
+  fi
+}
+
+main "$@"
