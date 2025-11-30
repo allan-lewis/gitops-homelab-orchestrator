@@ -1,7 +1,7 @@
 {
   "hosts": {
     "todash": {
-      "ip": "192.168.86.42",
+      "ip": "192.168.86.69",
       "ssh_user": "lab",
       "tags": ["terraform", "arch", "tinker"],
 
@@ -11,7 +11,7 @@
         "disk_gb": 32,
         "template_ref": "arch/tinker/stable",
         "node": "polaris",
-        "ipconfig": "ip=192.168.86.42/24,gw=192.168.86.1"
+        "ipconfig": "ip=192.168.86.69/24,gw=192.168.86.1"
       },
 
       "ansible": {

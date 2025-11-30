@@ -1,7 +1,7 @@
 {
   "hosts": {
     "langolier": {
-      "ip": "192.168.86.50",
+      "ip": "192.168.86.70",
       "ssh_user": "lab",
       "tags": ["terraform", "ubuntu", "tinker"],
 
@@ -11,7 +11,7 @@
         "disk_gb": 32,
         "template_ref": "ubuntu/tinker/stable",
         "node": "polaris",
-        "ipconfig": "ip=192.168.86.50/24,gw=192.168.86.1"
+        "ipconfig": "ip=192.168.86.70/24,gw=192.168.86.1"
       },
 
       "ansible": {

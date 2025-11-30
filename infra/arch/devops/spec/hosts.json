@@ -1,7 +1,7 @@
 {
   "hosts": {
     "blaine": {
-      "ip": "192.168.86.40",
+      "ip": "192.168.86.98",
       "ssh_user": "lab",
       "tags": ["terraform", "arch", "devops", "canary"],
 
@@ -11,7 +11,7 @@
         "disk_gb": 32,
         "template_ref": "arch/devops/stable",
         "node": "polaris",
-        "ipconfig": "ip=192.168.86.40/24,gw=192.168.86.1"
+        "ipconfig": "ip=192.168.86.98/24,gw=192.168.86.1"
       },
 
       "ansible": {
@@ -21,7 +21,7 @@
       }
     },
     "patricia": {
-      "ip": "192.168.86.41",
+      "ip": "192.168.86.99",
       "ssh_user": "lab",
       "tags": ["terraform", "arch", "devops"],
 
@@ -31,7 +31,7 @@
         "disk_gb": 32,
         "template_ref": "arch/devops/stable",
         "node": "polaris",
-        "ipconfig": "ip=192.168.86.41/24,gw=192.168.86.1"
+        "ipconfig": "ip=192.168.86.99/24,gw=192.168.86.1"
       },
 
       "ansible": {
