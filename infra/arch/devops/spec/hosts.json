@@ -70,7 +70,12 @@
 
     "groups": {
       "arch_devops": {
-        "vars": {}
+        "vars": {
+          "ssh_keys_install_private_for_ansible_user": true,
+          "ssh_keys_install_public_for_ansible_user": true,
+          "ssh_keys_install_private_for_root": true,
+          "ssh_keys_install_public_for_root": true
+        }
       }
     }
   }

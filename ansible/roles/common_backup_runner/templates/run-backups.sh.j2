@@ -31,7 +31,7 @@ run_pair() {
 
   log "START  | rsync ${RSYNC_FLAGS} '${src_norm}' -> '${dest_norm}'"
   # shellcheck disable=SC2086
-  rsync ${RSYNC_FLAGS} --progress "${src_norm}" "${dest_norm}" 2>&1 | tee -a "$LOG_PATH"
+  rsync ${RSYNC_FLAGS} -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes" --progress "${src_norm}" "${dest_norm}" 2>&1 | tee -a "$LOG_PATH"
   local rc=${PIPESTATUS[0]}
 
   if [[ $rc -eq 0 ]]; then

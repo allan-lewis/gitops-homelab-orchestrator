@@ -1,0 +1,103 @@
+---
+- name: Compute whether private/public keys are needed
+  ansible.builtin.set_fact:
+    ssh_keys_private_needed: >-
+      {{ ssh_keys_install_private_for_ansible_user
+         or ssh_keys_install_private_for_root }}
+    ssh_keys_public_needed: >-
+      {{ ssh_keys_install_public_for_ansible_user
+         or ssh_keys_install_public_for_root }}
+
+- name: Load base64 private key from SSH_PRIVATE_KEY env
+  ansible.builtin.set_fact:
+    ssh_private_key_b64: "{{ lookup('env', 'SSH_PRIVATE_KEY') | default('', true) }}"
+  when: ssh_keys_private_needed
+
+- name: Assert private key env var present when required
+  ansible.builtin.assert:
+    that:
+      - ssh_private_key_b64 is defined
+      - ssh_private_key_b64 | length > 0
+    fail_msg: >-
+      SSH_PRIVATE_KEY environment variable is required and must be non-empty
+      when any private key installation is enabled.
+  when: ssh_keys_private_needed
+
+- name: Load base64 public key from SSH_PUBLIC_KEY env
+  ansible.builtin.set_fact:
+    ssh_public_key_b64: "{{ lookup('env', 'SSH_PUBLIC_KEY') | default('', true) }}"
+  when: ssh_keys_public_needed
+
+- name: Assert public key env var present when required
+  ansible.builtin.assert:
+    that:
+      - ssh_public_key_b64 is defined
+      - ssh_public_key_b64 | length > 0
+    fail_msg: >-
+      SSH_PUBLIC_KEY environment variable is required and must be non-empty
+      when any public key installation is enabled.
+  when: ssh_keys_public_needed
+
+# --- ansible_user setup -------------------------------------------------------
+
+- name: Ensure ansible_user .ssh directory exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.ssh"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0700"
+  when: ssh_keys_install_private_for_ansible_user or ssh_keys_install_public_for_ansible_user
+  become: true
+
+- name: Install private key for ansible_user
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/.ssh/{{ ssh_keys_private_filename }}"
+    content: "{{ ssh_private_key_b64 | b64decode }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  when: ssh_keys_install_private_for_ansible_user
+  become: true
+
+- name: Install public key for ansible_user
+  ansible.builtin.copy:
+    dest: "/home/{{ ansible_user }}/.ssh/{{ ssh_keys_public_filename }}"
+    content: "{{ ssh_public_key_b64 | b64decode }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  when: ssh_keys_install_public_for_ansible_user
+  become: true
+
+# --- root setup ---------------------------------------------------------------
+
+- name: Ensure root .ssh directory exists
+  ansible.builtin.file:
+    path: "/root/.ssh"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: ssh_keys_install_private_for_root or ssh_keys_install_public_for_root
+  become: true
+
+- name: Install private key for root
+  ansible.builtin.copy:
+    dest: "/root/.ssh/{{ ssh_keys_private_filename }}"
+    content: "{{ ssh_private_key_b64 | b64decode }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: ssh_keys_install_private_for_root
+  become: true
+
+- name: Install public key for root
+  ansible.builtin.copy:
+    dest: "/root/.ssh/{{ ssh_keys_public_filename }}"
+    content: "{{ ssh_public_key_b64 | b64decode }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: ssh_keys_install_public_for_root
+  become: true

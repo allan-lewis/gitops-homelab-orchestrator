@@ -11,6 +11,7 @@
     - { role: arch_shell,               tags: ["arch_dotfiles"] }
     - { role: arch_aur,                 tags: ["arch_aur"], when: arch_aur_enabled | default(false) }
     - { role: arch_docker_compose,      tags: ["arch_docker"] }
+    - { role: common_install_ssh_keys,  tags: ["arch_ssh_keys"] }
     - { role: common_backup_runner,     tags: ["arch_backup"] }
     - { role: common_s3_local_mirror,   tags: ["arch_s3"] }
 

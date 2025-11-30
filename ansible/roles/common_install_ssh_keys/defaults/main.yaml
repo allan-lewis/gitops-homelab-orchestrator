@@ -1,0 +1,11 @@
+---
+# Which users should get which keys
+ssh_keys_install_private_for_ansible_user: false
+ssh_keys_install_public_for_ansible_user: false
+
+ssh_keys_install_private_for_root: false
+ssh_keys_install_public_for_root: false
+
+# Filenames to use under ~/.ssh
+ssh_keys_private_filename: id_ed25519
+ssh_keys_public_filename: id_ed25519.pub
