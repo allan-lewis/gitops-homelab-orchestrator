@@ -1,0 +1,18 @@
+# Where all buckets get mirrored locally (one copy only)
+s3_mirror_base_dir: /var/lib/s3-mirror
+
+# Buckets to mirror (each becomes s3_mirror_base_dir/<bucket>/…)
+s3_mirror_buckets: []
+
+# Weekly schedule
+s3_mirror_cron:
+  enabled: true
+  minute: "0"
+  hour: "5"
+  weekday: "5"
+
+# Log file
+s3_mirror_log_path: /var/log/s3-mirror.log
+
+# Extra aws s3 sync flags
+s3_mirror_sync_flags: "--delete --only-show-errors"

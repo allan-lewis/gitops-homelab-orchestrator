@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Use "lab" user's AWS config/credentials even when running as root
+export AWS_SHARED_CREDENTIALS_FILE="/home/lab/.aws/credentials"
+export AWS_CONFIG_FILE="/home/lab/.aws/config"
+export AWS_PROFILE="default"
+export AWS_PAGER=""
+
+BASE="{{ s3_mirror_base_dir }}"
+FLAGS="{{ s3_mirror_sync_flags }}"
+
+{# s3_mirror_buckets comes from INI inventory as a string: "bucket-one,bucket-two"
+   or may be a real list if set via host_vars/group_vars later. Handle both. #}
+{% set buckets = s3_mirror_buckets %}
+{% if buckets is string %}
+  {% set buckets = buckets | split(',') %}
+{% endif %}
+
+BUCKETS=({% for b in buckets %}"{{ b }}"{% if not loop.last %} {% endif %}{% endfor %})
+
+ts(){ date '+%F %T'; }
+log(){ echo "$(ts) | $*"; }
+
+# ---- pre-flight: ensure AWS credentials are present and valid ----
+if ! aws sts get-caller-identity >/dev/null 2>&1; then
+  log "ERROR: AWS credentials not configured or expired (run ''aws configure'' or login via SSO)."
+  exit 1
+fi
+
+mkdir -p "$BASE"
+
+log "Starting S3 mirror run"
+failures=0
+
+for bucket in "${BUCKETS[@]}"; do
+  dest="$BASE/$bucket"
+  mkdir -p "$dest"
+  log "SYNC  s3://$bucket -> $dest"
+  if aws s3 sync "s3://$bucket" "$dest" $FLAGS; then
+    log "OK    $bucket"
+  else
+    log "ERROR $bucket"
+    ((failures++))
+  fi
+done
+
+if (( failures > 0 )); then
+  log "Finished with $failures error(s)"
+  exit 1
+else
+  log "Finished OK"
+fi

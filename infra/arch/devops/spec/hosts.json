@@ -48,7 +48,14 @@
           "doppler_config": "prd",
           "doppler_project": "default",
           "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_PRODUCTION" },
-          "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/production-k8s"
+          "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/production-k8s",
+          "s3_mirror_buckets": [
+            "gitops-homelab-longhorn",
+            "gitops-homelab-longhorn-attic",
+            "gitops-homelab-longhorn-staging",
+            "gitops-homelab-terraform",
+            "gitops-homelab-orchestrator-tf"
+          ]
         }
       }
     }

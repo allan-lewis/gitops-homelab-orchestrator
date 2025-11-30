@@ -41,12 +41,15 @@ mkdir -p "$(dirname "$OUT_INI")"
     | ($root.ansible // {}) as $ansible
     | ($ansible.groups // {}) as $group_defs
 
-    # Render a single var "name=value" with support for { "env": "VAR" }
+    # Render a single var "name=value" with support for { "env": "VAR" } and arrays
     |
     def render_var(name; value):
       if (value | type) == "object"
          and (value | keys) == ["env"] then
         "\(name)=\"{{ lookup('\''env'\'', '\''\((value.env|tostring))'\'') }}\""
+      elif (value | type) == "array" then
+        # For INI inventory, represent arrays as comma-separated strings
+        "\(name)=\(value | join(","))"
       else
         "\(name)=\(value)"
       end;

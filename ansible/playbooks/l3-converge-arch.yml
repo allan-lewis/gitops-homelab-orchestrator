@@ -5,13 +5,14 @@
   become: true
 
   roles:
-    - { role: arch_base,              tags: ["arch_base"] }
-    - { role: arch_hardening,         tags: ["arch_hardening"] }
-    - { role: arch_services,          tags: ["arch_services"] }
-    - { role: arch_shell,             tags: ["arch_dotfiles"] }
-    - { role: arch_aur,               tags: ["arch_aur"], when: arch_aur_enabled | default(false) }
-    - { role: arch_docker_compose,    tags: ["arch_docker"] }
-    - { role: common_backup_runner,   tags: ["arch_backup"] }
+    - { role: arch_base,                tags: ["arch_base"] }
+    - { role: arch_hardening,           tags: ["arch_hardening"] }
+    - { role: arch_services,            tags: ["arch_services"] }
+    - { role: arch_shell,               tags: ["arch_dotfiles"] }
+    - { role: arch_aur,                 tags: ["arch_aur"], when: arch_aur_enabled | default(false) }
+    - { role: arch_docker_compose,      tags: ["arch_docker"] }
+    - { role: common_backup_runner,     tags: ["arch_backup"] }
+    - { role: common_s3_local_mirror,   tags: ["arch_s3"] }
 
 - name: Arch DevOps convergence
   hosts: arch_devops

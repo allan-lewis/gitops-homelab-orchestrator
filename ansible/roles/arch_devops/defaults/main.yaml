@@ -5,6 +5,8 @@ arch_devops_pacman_packages:
   - aws-cli-v2
   - talosctl
   - helm
+  - kustomize
+  - ansible
   - ansible-core
 
 aws_cli_user: "{{ ansible_user }}"
