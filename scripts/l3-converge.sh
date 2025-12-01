@@ -18,7 +18,7 @@ set -euo pipefail
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
-INVENTORY="artifacts/${OS}/${PERSONA}/hosts.yml"
+INVENTORY="artifacts/l3-inventory/${OS}/${PERSONA}/hosts.yml"
 PLAYBOOK="ansible/playbooks/l3-converge-${OS}.yml"
 
 if [[ ! -f "${INVENTORY}" ]]; then
