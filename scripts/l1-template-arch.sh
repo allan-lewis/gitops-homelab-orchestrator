@@ -154,7 +154,7 @@ echo "Wrote ${norm_out}"
 
 ts="$(date -u +"%Y%m%d-%H%M%S")"
 
-dest_dir="infra/${OS_NAME}/artifacts"
+dest_dir="infra/os/${OS_NAME}/artifacts"
 mkdir -p "${dest_dir}"
 
 dest_file="${dest_dir}/vm-template-${ts}.json"
@@ -163,7 +163,7 @@ cp "${norm_out}" "${dest_file}"
 echo "Saved timestamped manifest to ${dest_file}"
 
 if [[ "${L1_UPDATE_STABLE}" == "1" ]]; then
-  spec_dir="infra/${OS_NAME}/spec"
+  spec_dir="infra/os/${OS_NAME}/spec"
   mkdir -p "${spec_dir}"
   ln -sf "../artifacts/${dest_file##*/}" "${spec_dir}/vm-template-stable.json"
   echo "Updated stable symlink -> ${spec_dir}/vm-template-stable.json"

@@ -147,8 +147,8 @@ echo
 echo "==> Generating manifest JSON..."
 
 TIMESTAMP_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-ARTIFACT_DIR="${REPO_ROOT}/infra/ubuntu/artifacts"
-SPEC_DIR="${REPO_ROOT}/infra/ubuntu/spec"
+ARTIFACT_DIR="${REPO_ROOT}/infra/os/ubuntu/artifacts"
+SPEC_DIR="${REPO_ROOT}/infra/os/ubuntu/spec"
 mkdir -p "${ARTIFACT_DIR}" "${SPEC_DIR}"
 
 MANIFEST_FILE="${ARTIFACT_DIR}/vm-template-$(date -u +"%Y%m%d-%H%M%S").json"
