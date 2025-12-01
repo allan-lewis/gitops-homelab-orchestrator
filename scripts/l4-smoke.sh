@@ -18,7 +18,7 @@ set -euo pipefail
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
-INI="artifacts/${OS}/${PERSONA}/hosts.ini"
+INI="artifacts/l3-inventory/${OS}/${PERSONA}/hosts.yml"
 
 if [[ ! -f "${INI}" ]]; then
   echo "Inventory not found at: ${INI}" >&2

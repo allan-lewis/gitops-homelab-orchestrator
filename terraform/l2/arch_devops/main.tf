@@ -1,11 +1,11 @@
 locals {
   # Path to this persona's hosts.json spec
-  hosts_json_path = "${path.module}/../../../infra/arch/devops/spec/hosts.json"
+  hosts_json_path = "${path.module}/../../../infra/os/arch/personas/devops/spec/hosts.json"
 
   # Logical template refs → manifest JSON files
   template_manifest_map = {
-    "arch/devops/stable" = "${path.module}/../../../infra/arch/spec/vm-template-stable.json"
-    # "arch/devops/canary" = "${path.module}/../../../infra/arch/spec/vm-template-canary.json"
+    "arch/devops/stable" = "${path.module}/../../../infra/os/arch/spec/vm-template-stable.json"
+    # "arch/devops/canary" = "${path.module}/../../../infra/os/arch/spec/vm-template-canary.json"
   }
 }
 

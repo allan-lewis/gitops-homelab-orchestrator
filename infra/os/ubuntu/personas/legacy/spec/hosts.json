@@ -13,19 +13,6 @@
         "vars": {}
       }
     },
-    "callahan": {
-      "ip": "192.168.86.215",
-      "ssh_user": "lab",
-      "tags": ["ubuntu", "legacy"],
-
-      "terraform": {},
-
-      "ansible": {
-        "group_memberships": ["ubuntu_legacy"],
-
-        "vars": {}
-      }
-    },
     "carrie": {
       "ip": "192.168.86.228",
       "ssh_user": "lab",

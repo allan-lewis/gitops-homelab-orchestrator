@@ -1,10 +1,10 @@
 locals {
   # Path to this persona's hosts.json spec
-  hosts_json_path = "${path.module}/../../../infra/arch/tinker/spec/hosts.json"
+  hosts_json_path = "${path.module}/../../../infra/os/arch/personas/tinker/spec/hosts.json"
 
   # Logical template refs → manifest JSON files for this persona
   template_manifest_map = {
-    "arch/tinker/stable" = "${path.module}/../../../infra/arch/spec/vm-template-stable.json"
+    "arch/tinker/stable" = "${path.module}/../../../infra/os/arch/spec/vm-template-stable.json"
     # Add canary/etc here later if needed
   }
 }

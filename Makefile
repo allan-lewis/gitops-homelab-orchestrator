@@ -49,6 +49,7 @@ endif
   l3-ubuntu-tinker-converge \
   l4-arch-devops-smoke \
   l4-arch-tinker-smoke \
+  l4-ubuntu-legacy-smoke \
   l4-ubuntu-tinker-smoke
 
 help: ## Show targets
@@ -151,6 +152,10 @@ l4-arch-devops-smoke: l3-arch-devops-inventory ## L4 smoke test for Arch DevOps 
 l4-arch-tinker-smoke: l3-arch-tinker-inventory ## L4 smoke test for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh arch tinker'
+
+l4-ubuntu-legacy-smoke: l3-ubuntu-legacy-inventory ## L4 smoke test for Ubuntu Legacy hosts
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l4-smoke.sh ubuntu legacy'
 
 l4-ubuntu-tinker-smoke: l3-ubuntu-tinker-inventory ## L4 smoke test for Ubuntu Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \

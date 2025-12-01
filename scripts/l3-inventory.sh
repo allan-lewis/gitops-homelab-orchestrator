@@ -16,8 +16,8 @@ set -euo pipefail
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
-HOSTS_JSON="infra/${OS}/${PERSONA}/spec/hosts.json"
-OUT_YAML="artifacts/${OS}/${PERSONA}/hosts.yml"
+HOSTS_JSON="infra/os/${OS}/personas/${PERSONA}/spec/hosts.json"
+OUT_YAML="artifacts/l3-inventory/${OS}/${PERSONA}/hosts.yml"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required to render the Ansible inventory" >&2
