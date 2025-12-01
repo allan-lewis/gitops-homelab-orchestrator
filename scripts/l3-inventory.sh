@@ -11,13 +11,13 @@ set -euo pipefail
 # Reads:
 #   infra/<os>/<persona>/spec/hosts.json
 # Writes:
-#   artifacts/<os>/<persona>/hosts.ini
+#   artifacts/<os>/<persona>/hosts.yml (JSON, which is valid YAML)
 
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
 HOSTS_JSON="infra/${OS}/${PERSONA}/spec/hosts.json"
-OUT_INI="artifacts/${OS}/${PERSONA}/hosts.ini"
+OUT_YAML="artifacts/${OS}/${PERSONA}/hosts.yml"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "jq is required to render the Ansible inventory" >&2
@@ -29,120 +29,104 @@ if [ ! -f "$HOSTS_JSON" ]; then
   exit 1
 fi
 
-mkdir -p "$(dirname "$OUT_INI")"
+mkdir -p "$(dirname "$OUT_YAML")"
 
 {
   echo "# generated from $HOSTS_JSON on $(date -u +%FT%TZ)"
   echo "# DO NOT COMMIT THIS FILE"
+  echo
 
-  jq -r '
+  jq '
     . as $root
     | ($root.hosts // {}) as $hosts
     | ($root.ansible // {}) as $ansible
     | ($ansible.groups // {}) as $group_defs
 
-    # Render a single var "name=value" with support for { "env": "VAR" } and arrays
+    # Render a value:
+    # - { "env": "VAR" }  ->  "{{ lookup('env', 'VAR') }}"
+    # - arrays / scalars  ->  as-is
     |
-    def render_var(name; value):
-      if (value | type) == "object"
-         and (value | keys) == ["env"] then
-        "\(name)=\"{{ lookup('\''env'\'', '\''\((value.env|tostring))'\'') }}\""
-      elif (value | type) == "array" then
-        # For INI inventory, represent arrays as comma-separated strings
-        "\(name)=\(value | join(","))"
+    def render_value(v):
+      if (v | type) == "object" and (v | keys) == ["env"] then
+        "{{ lookup('"'"'env'"'"', \"\(v.env|tostring)\") }}"
       else
-        "\(name)=\(value)"
+        v
       end;
 
-    # Render all vars in a map as separate lines
-    def render_vars_block(vars):
-      vars
-      | to_entries[]
-      | render_var(.key; .value);
+    # Apply render_value to all values in a vars map
+    def render_vars_map(vars):
+      vars | with_entries(.value = render_value(.value));
 
-    # Build a map: group_name -> [host1, host2, ...] from per-host group_memberships
+    # Build host vars object for a single host
+    def host_vars(host_key; host_val):
+      (host_val.ansible // {}) as $a
+      | ($a.vars // {}) as $hvars
+      | {
+          ansible_host: host_val.ip,
+          ansible_user: host_val.ssh_user
+        }
+        + (if $a.python_interpreter then
+             { ansible_python_interpreter: $a.python_interpreter }
+           else
+             {}
+           end)
+        + (render_vars_map($hvars));
+
+    # Build group_name -> [hostnames] from per-host group_memberships
     def groups_map:
       $hosts
       | to_entries
-      | reduce .[] as $h (
-          {};
+      | reduce .[] as $h ({}; 
           ($h.value.ansible.group_memberships // []) as $gm
-          | reduce $gm[] as $g (
-              .;
+          | reduce $gm[] as $g (.;
               .[$g] = ((.[$g] // []) + [$h.key])
             )
         );
 
     $hosts as $hosts
-    | groups_map as $groups
-
-    # [all] section with full host lines + host-level vars (single line per host)
+    | groups_map as $gm
+    | ($group_defs // {}) as $group_defs
     | (
-        "[all]"
-      ),
-      (
-        $hosts
-        | to_entries[]
-        | . as $h
-        | ($h.value.ansible // {}) as $a
-        | ($a.vars // {}) as $hvars
-        | ($hvars
-            | to_entries
-            | map(render_var(.key; .value))
-          ) as $extra_list
-        | (
-            ["ansible_host=\($h.value.ip)",
-             "ansible_user=\($h.value.ssh_user)"]
-            +
-            (if $a.python_interpreter then
-               ["ansible_python_interpreter=\($a.python_interpreter)"]
-             else
-               []
-             end)
-            +
-            $extra_list
-          ) as $segments
-        | $h.key
-          + (if ($segments | length) > 0 then
-               " " + ($segments | join(" "))
-             else
-               ""
-             end)
-      ),
+        (( $gm | keys ) + ( $group_defs | keys )) 
+        | unique
+      ) as $group_names
 
-      # [all:vars] from ansible.all.vars (if present & non-empty)
-      (
-        ($ansible.all.vars // {}) as $allvars
-        | if ($allvars | length) > 0 then
-            "\n[all:vars]",
-            (render_vars_block($allvars))
-          else
-            empty
-          end
-      ),
-
-      # Group membership sections: one [group] per group with its hosts
-      (
-        $groups
-        | to_entries[]
-        | "\n[" + .key + "]",
-          ( .value[] )
-      ),
-
-      # Group vars sections: [group:vars] from ansible.groups.<name>.vars
-      (
-        $group_defs
-        | to_entries[]
-        | . as $gd
-        | ($gd.value.vars // {}) as $gvars
-        | if ($gvars | length) > 0 then
-            "\n[" + $gd.key + ":vars]",
-            (render_vars_block($gvars))
-          else
-            empty
-          end
-      )
+    # Build final inventory structure
+    | {
+        all: {
+          hosts: (
+            $hosts
+            | with_entries(
+                .value = host_vars(.key; .value)
+              )
+          ),
+          vars: (
+            ($ansible.all.vars // {})
+            | render_vars_map(.)
+          ),
+          children: (
+            $group_names
+            | map(
+                {
+                  key: .,
+                  value: {
+                    hosts: (
+                      ($gm[.] // [])
+                      | map({ key: ., value: {} })
+                      | from_entries
+                    ),
+                    vars: (
+                      ($group_defs[.].vars // {})
+                      | render_vars_map(.)
+                    )
+                  }
+                }
+              )
+            | from_entries
+          )
+        }
+      }
   ' "$HOSTS_JSON"
-} > "$OUT_INI"
+} > "$OUT_YAML"
 
-echo "Wrote inventory: $OUT_INI"
+echo "Wrote inventory: $OUT_YAML"

@@ -9,7 +9,7 @@ set -euo pipefail
 #   l3-converge.sh arch tinker
 #
 # Expects:
-#   - Inventory: artifacts/<os>/<persona>/hosts.ini
+#   - Inventory: artifacts/<os>/<persona>/hosts.yml
 #   - Playbook : ansible/playbooks/l3-converge-<os>.yml
 #   - Optional env vars:
 #       L3_TAGS  : comma-separated Ansible tags (e.g., "base,desktop")
@@ -18,7 +18,7 @@ set -euo pipefail
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
-INVENTORY="artifacts/${OS}/${PERSONA}/hosts.ini"
+INVENTORY="artifacts/${OS}/${PERSONA}/hosts.yml"
 PLAYBOOK="ansible/playbooks/l3-converge-${OS}.yml"
 
 if [[ ! -f "${INVENTORY}" ]]; then
