@@ -16,9 +16,9 @@
 #   /var/lib/docker/volumes/myapp_db/_data :: nas:/tank/backups/myapp/db
 #   /home :: /mnt/backup/home
 
-{% if backup_fragment_header -%}
-# {{ backup_fragment_header }}
+{% if backup_runner_fragment_header -%}
+# {{ backup_runner_fragment_header }}
 {% endif -%}
-{% for pair in backup_fragment_pairs -%}
+{% for pair in backup_runner_volumes -%}
 {{ pair.src }} :: {{ pair.dest }}
 {% endfor %}

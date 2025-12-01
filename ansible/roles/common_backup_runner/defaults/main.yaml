@@ -6,9 +6,15 @@ backup_runner_log_path: /var/log/backup-run.log
 # Safe rsync defaults
 backup_runner_rsync_flags: "-aHAX --numeric-ids --delete-delay --partial --partial-dir=.rsync-partial --human-readable --sparse --mkpath"
 
+backup_runner_fragment_header: "Default fragment automatically rendered based on hosts' 'backup_volumes' variable"
+
 # Per-host knobs (can be overridden in host_vars/<host>.yml)
 backup_runner_healthchecks_url: ""         # default: no ping
 # backup_runner_healthchecks_status: ""    # default: no gatus healthcheck
 backup_runner_cron_enabled: true           # enable cron by default
 backup_runner_cron_hour: "*"               # default: every hour
 backup_runner_cron_minute: "0"             # default: at minute 0
+
+backup_runner_volumes: []
+
+backup_runner_remote_base_path: "/mnt/pool1/gitops-homelab/backup-runner/{{ inventory_hostname }}"

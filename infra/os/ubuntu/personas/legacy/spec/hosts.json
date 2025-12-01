@@ -36,7 +36,12 @@
       "ansible": {
         "group_memberships": ["ubuntu_legacy"],
 
-        "vars": {}
+        "vars": {
+          "backup_runner_cron_hour": "*",
+          "backup_runner_cron_minute": "45",
+          "backup_runner_healthchecks_url": "https://hc-ping.com/dc76e9a3-61ac-41ab-b609-df385ef69e29",
+          "backup_runner_healthchecks_status": "https://healthchecks.io/b/2/280d2b18-81e3-4b55-a3b4-570d60ce8335.json"
+        }
       }
     },
     "flagg": {
@@ -49,7 +54,12 @@
       "ansible": {
         "group_memberships": ["ubuntu_legacy"],
 
-        "vars": {}
+        "vars": {
+          "backup_runner_cron_hour": "*",
+          "backup_runner_cron_minute": "15",
+          "backup_runner_healthchecks_url": "https://hc-ping.com/fc7034f6-cb5d-4965-91ae-017aeb4591da",
+          "backup_runner_healthchecks_status": "https://healthchecks.io/b/2/125505b2-327a-40e1-91e2-f5e5dd3152db.json"
+        }
       }
     },
     "misery": {
@@ -62,7 +72,12 @@
       "ansible": {
         "group_memberships": ["ubuntu_legacy"],
 
-        "vars": {}
+        "vars": {
+          "backup_runner_cron_hour": "*",
+          "backup_runner_cron_minute": "35",    
+          "backup_runner_healthchecks_url": "https://hc-ping.com/700f0972-2de8-40af-8561-703d0ef7910d",
+          "backup_runner_healthchecks_status": "https://healthchecks.io/b/2/9f976a0d-58e9-4093-a41c-ca0e40981d36.json"
+        }
       }
     },
     "sheemie": {

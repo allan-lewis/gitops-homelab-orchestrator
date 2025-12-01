@@ -45,6 +45,8 @@
 
         "vars": {
           "ansible_environment": "production",
+          "backup_runner_cron_hour": "*",
+          "backup_runner_cron_minute": "25",
           "doppler_config": "prd",
           "doppler_project": "default",
           "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_PRODUCTION" },
@@ -55,6 +57,18 @@
             "gitops-homelab-longhorn-staging",
             "gitops-homelab-terraform",
             "gitops-homelab-orchestrator-tf"
+          ],
+          "backup_runner_volumes": [
+            { 
+              "src": "{{ s3_mirror_base_dir }}",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/s3-mirror" 
+            }
+          ],
+          "backup_volumes2": [
+            { 
+              "src": "{{ postgres_db_backup_dir }}",
+              "dest": "allan@192.168.86.106:/mnt/pool1/gitops-homelab/backup-runner/patricia/db-dumps" 
+            }
           ]
         }
       }
@@ -64,7 +78,9 @@
   "ansible": {
     "all": {
       "vars": {
-        "ansible_python_interpreter": "/usr/bin/python3"
+        "ansible_python_interpreter": "/usr/bin/python3",
+        "backup_runner_user": "allan",
+        "backup_runner_remote_host": "192.168.86.106"
       }
     },
 

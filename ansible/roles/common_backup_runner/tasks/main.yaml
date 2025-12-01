@@ -60,3 +60,12 @@
     owner: root
     group: root
     mode: "0644"
+
+- name: Render backup fragment
+  ansible.builtin.template:
+    src: backup-fragment.conf.j2
+    dest: "{{ backup_runner_base_dir }}/backup.conf.d/default-backups.conf"
+    owner: root
+    group: root
+    mode: "0640"
+  when: (backup_runner_volumes | length) > 0 
