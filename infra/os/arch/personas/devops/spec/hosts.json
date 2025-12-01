@@ -50,7 +50,15 @@
           "doppler_config": "prd",
           "doppler_project": "default",
           "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_PRODUCTION" },
+          "postgres_db_backup_enabled": true,
+          "postgres_db_backup_dir": "/var/lib/postgres-db-dumps",
+          "postgres_db_k8s_namespace": "authentik",
+          "postgres_db_k8s_selector": "app.kubernetes.io/name=postgresql,app.kubernetes.io/component=primary",
+          "postgres_db_name": "authentik",
+          "postgres_db_user": "authentik",
+          "postgres_db_password": "{{ lookup('env','AUTHENTIK_POSTGRESQL_PASSWORD') }}",
           "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/production-k8s",
+          "s3_mirror_base_dir": "/var/lib/s3-mirror",
           "s3_mirror_buckets": [
             "gitops-homelab-longhorn",
             "gitops-homelab-longhorn-attic",
@@ -62,12 +70,10 @@
             { 
               "src": "{{ s3_mirror_base_dir }}",
               "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/s3-mirror" 
-            }
-          ],
-          "backup_volumes2": [
+            },
             { 
               "src": "{{ postgres_db_backup_dir }}",
-              "dest": "allan@192.168.86.106:/mnt/pool1/gitops-homelab/backup-runner/patricia/db-dumps" 
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/db-dumps" 
             }
           ]
         }

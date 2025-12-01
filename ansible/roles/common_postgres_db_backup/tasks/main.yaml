@@ -1,0 +1,40 @@
+---
+- name: Ensure dump directory exists
+  ansible.builtin.file:
+    path: "{{ postgres_db_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure backup log exists
+  ansible.builtin.file:
+    path: "{{ postgres_db_backup_log_path }}"
+    state: touch
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Install Postgres DB dump script
+  ansible.builtin.template:
+    src: dump-postgres-db.sh.j2
+    dest: /usr/local/bin/dump-postgres-db.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Add cron job for Postgres DB dump
+  when: postgres_db_backup_cron.enabled
+  ansible.builtin.cron:
+    name: "postgres-db-backup"
+    user: root
+    minute: "{{ postgres_db_backup_cron.minute }}"
+    hour: "{{ postgres_db_backup_cron.hour }}"
+    job: "/usr/local/bin/dump-postgres-db.sh >> {{ postgres_db_backup_log_path }} 2>&1"
+
+- name: Remove cron job when disabled
+  when: not postgres_db_backup_cron.enabled
+  ansible.builtin.cron:
+    name: "postgres-db-backup"
+    user: root
+    state: absent

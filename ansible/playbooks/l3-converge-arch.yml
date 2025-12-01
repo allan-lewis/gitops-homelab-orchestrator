@@ -13,7 +13,6 @@
     - { role: arch_docker_compose,      tags: ["arch_docker"] }
     - { role: common_install_ssh_keys,  tags: ["arch_ssh_keys"] }
     - { role: common_backup_runner,     tags: ["arch_backup"] }
-    - { role: common_s3_local_mirror,   tags: ["arch_s3"] }
 
 - name: Arch DevOps convergence
   hosts: arch_devops
@@ -22,6 +21,8 @@
 
   roles:
     - { role: arch_devops,     tags: ["arch_devops"] }
+    - { role: common_s3_local_mirror,   tags: ["arch_s3"] }
+    - { role: common_postgres_db_backup,   tags: ["arch_db_backup"], when: postgres_db_backup_enabled | default(false) }
 
 - name: Arch Tinker convergence
   hosts: arch_tinker

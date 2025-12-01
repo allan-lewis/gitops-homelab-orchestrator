@@ -1,0 +1,27 @@
+# Storage & schedule
+postgres_db_backup_enabled: false
+postgres_db_backup_dir: /var/lib/postgres-db-dumps
+postgres_db_backup_log_path: /var/log/postgres-db-backup.log
+postgres_db_backup_keep_days: 14
+postgres_db_backup_cron:
+  enabled: true
+  minute: "30"
+  hour: "3"
+
+# DB params
+# postgres_db_name: immich
+# postgres_db_user: postgres
+# postgres_db_password: ""
+
+# ---- Mode selection ----
+# A) Docker mode (set this to enable)
+postgres_db_container: "" # e.g., "immich_postgres"
+
+# B) Kubernetes mode (set namespace to enable)
+postgres_db_k8s_namespace: ""        # e.g., "databases"
+postgres_db_k8s_pod: ""              # e.g., "immich-postgres-0" (optional if selector used)
+postgres_db_k8s_container: ""        # e.g., "postgres" (optional)
+postgres_db_k8s_selector: ""         # e.g., "app=immich-postgres,role=primary" (optional)
+
+# Extra pg_dump flags (usually empty)
+postgres_db_dump_extra_args: ""

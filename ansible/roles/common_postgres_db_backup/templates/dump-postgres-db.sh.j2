@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BACKUP_DIR="{{ postgres_db_backup_dir }}"
+KEEP_DAYS="{{ postgres_db_backup_keep_days }}"
+
+DB="{{ postgres_db_name }}"
+USER="{{ postgres_db_user }}"
+PASS="{{ postgres_db_password }}"
+EXTRA_ARGS="{{ postgres_db_dump_extra_args }}"
+
+# Mode A: Docker
+CONTAINER="{{ postgres_db_container }}"
+
+# Mode B: Kubernetes
+KNS="{{ postgres_db_k8s_namespace }}"
+KPOD="{{ postgres_db_k8s_pod }}"
+KCTR="{{ postgres_db_k8s_container }}"
+KSEL="{{ postgres_db_k8s_selector }}"
+
+ts() { date '+%F %T'; }
+log(){ echo "$(ts) | $*"; }
+
+timestamp=$(date +"%Y%m%d-%H%M%S")
+outfile="$BACKUP_DIR/${DB}-${timestamp}.dump"
+
+mkdir -p "$BACKUP_DIR"
+
+log "Starting Postgres dump…"
+
+if [[ -n "$CONTAINER" ]]; then
+  # ---- Docker mode ----
+  log "Mode: docker exec → $CONTAINER (db=$DB user=$USER)"
+  export PGPASSWORD="$PASS"
+  # shellcheck disable=SC2086
+  docker exec -e PGPASSWORD="$PASS" "$CONTAINER" \
+    pg_dump -U "$USER" -d "$DB" -Fc ${EXTRA_ARGS} > "$outfile"
+
+elif [[ -n "$KNS" ]]; then
+  # ---- Kubernetes mode ----
+  if [[ -z "$KPOD" && -n "$KSEL" ]]; then
+    KPOD="$(kubectl -n "$KNS" get pods -l "$KSEL" -o jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | awk '{print $1}')"
+  fi
+  if [[ -z "$KPOD" ]]; then
+    log "ERROR: No pod resolved. Set postgres_db_k8s_pod or a working postgres_db_k8s_selector."
+    exit 1
+  fi
+  log "Mode: kubectl exec → ${KNS}/${KPOD}${KCTR:+ (container=$KCTR)} (db=$DB user=$USER)"
+  export PGPASSWORD="$PASS"
+  # shellcheck disable=SC2086
+  kubectl -n "$KNS" exec "$KPOD" ${KCTR:+-c "$KCTR"} -- \
+    env PGPASSWORD="$PASS" pg_dump -U "$USER" -d "$DB" -Fc ${EXTRA_ARGS} > "$outfile"
+
+else
+  log "ERROR: No mode configured (set postgres_db_container OR postgres_db_k8s_namespace)."
+  exit 1
+fi
+
+log "Dump complete: $outfile"
+find "$BACKUP_DIR" -type f -name "${DB}-*.dump" -mtime +$KEEP_DAYS -print -delete || true
+log "Prune complete (keep $KEEP_DAYS days)"
