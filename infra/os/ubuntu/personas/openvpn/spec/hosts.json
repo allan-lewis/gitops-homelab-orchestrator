@@ -1,0 +1,38 @@
+{
+  "hosts": {
+    "blaine": {
+      "ip": "192.168.86.223",
+      "ssh_user": "lab",
+      "tags": ["orchestrator", "terraform", "ubuntu", "openvpn"],
+
+      "terraform": {
+        "cpu": 4,
+        "memory_mb": 4096,
+        "disk_gb": 32,
+        "template_ref": "ubuntu/openvpn/stable",
+        "node": "polaris",
+        "ipconfig": "ip=192.168.86.223/24,gw=192.168.86.1"
+      },
+
+      "ansible": {
+        "group_memberships": ["ubuntu_openvpn"],
+
+        "vars": {}
+      }
+    }
+  },
+
+  "ansible": {
+    "all": {
+      "vars": {
+        "ansible_python_interpreter": "/usr/bin/python3"
+      }
+    },
+
+    "groups": {
+      "ubuntu_openvpn": {
+        "vars": { }
+      }
+    }
+  }
+}

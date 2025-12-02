@@ -37,6 +37,8 @@ endif
   l2-arch-devops-destroy \
   l2-arch-tinker-apply \
   l2-arch-tinker-destroy \
+  l2-ubuntu-openvpn-apply \
+  l2-ubuntu-openvpn-destroy \
   l2-ubuntu-tinker-apply \
   l2-ubuntu-tinker-destroy \
   l3-arch-devops-inventory \
@@ -93,6 +95,14 @@ l2-arch-tinker-apply: ## Plan/Apply Arch Tinker VM via Terraform (plan by defaul
 l2-arch-tinker-destroy: ## Plan/Destroy Arch Tinker VM via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l2-terraform.sh terraform/l2/arch_tinker destroy'
+
+l2-ubuntu-openvpn-apply: ## Plan/Apply Ubuntu OpenVPN VM via Terraform (plan by default)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_openvpn apply'
+
+l2-ubuntu-openvpn-destroy: ## Plan/Destroy Ubuntu OpenVPN VM via Terraform (dry-run by default)
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_openvpn destroy'
 
 l2-ubuntu-tinker-apply: ## Plan/Apply Ubuntu Tinker VM via Terraform (plan by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
