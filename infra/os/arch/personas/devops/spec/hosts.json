@@ -15,15 +15,18 @@
       },
 
       "ansible": {
-        "group_memberships": ["arch_devops", "docker_compose_monitoring"],
+        "group_memberships": ["arch_devops"],
 
         "vars": {
           "ansible_environment": "production",
+          "is_backup_enabled": true,
           "backup_runner_cron_hour": "*",
           "backup_runner_cron_minute": "25",
+          "is_devops_enabled": true,
           "doppler_config": "prd",
           "doppler_project": "default",
           "doppler_service_token": { "env": "DOPPLER_SERVICE_TOKEN_PRODUCTION" },
+          "is_db_backup_enabled": true,
           "postgres_db_backup_enabled": true,
           "postgres_db_backup_dir": "/var/lib/postgres-db-dumps",
           "postgres_db_k8s_namespace": "authentik",
@@ -32,6 +35,7 @@
           "postgres_db_user": "authentik",
           "postgres_db_password": "{{ lookup('env','AUTHENTIK_POSTGRESQL_PASSWORD') }}",
           "terraform_environment_dir": "/home/lab/gitops-homelab/terraform/environments/production-k8s",
+          "is_s3_mirror_enabled": true,
           "s3_mirror_base_dir": "/var/lib/s3-mirror",
           "s3_mirror_buckets": [
             "gitops-homelab-longhorn",
@@ -67,6 +71,7 @@
     "groups": {
       "arch_devops": {
         "vars": {
+          "is_ssh_keys_enabled": true,
           "ssh_keys_install_private_for_ansible_user": true,
           "ssh_keys_install_public_for_ansible_user": true,
           "ssh_keys_install_private_for_root": true,

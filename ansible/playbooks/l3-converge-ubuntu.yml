@@ -1,6 +1,6 @@
 ---
 - name: Baseline Ubuntu convergence
-  hosts: ubuntu_legacy:ubuntu_tinker
+  hosts: ubuntu_legacy:ubuntu_openvpn:ubuntu_tinker
   gather_facts: true
   become: true
 
