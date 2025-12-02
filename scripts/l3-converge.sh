@@ -13,7 +13,7 @@ set -euo pipefail
 #   - Playbook : ansible/playbooks/l3-converge-<os>.yml
 #   - Optional env vars:
 #       L3_TAGS  : comma-separated Ansible tags (e.g., "base,desktop")
-#       L3_LIMIT : Ansible --limit expression (e.g., "blaine" or "blaine:patricia")
+#       L3_LIMIT : Ansible --limit expression (e.g., "host1" or "host1:host2")
 
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"

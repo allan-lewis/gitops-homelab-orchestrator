@@ -2,8 +2,8 @@ locals {
   # Load golden host spec from JSON (same structure as before)
   # {
   #   "hosts": {
-  #     "blaine": { ... },
-  #     "patricia": { ... }
+  #     "host1": { ... },
+  #     "host2": { ... }
   #   }
   # }
   hosts_raw = jsondecode(file(var.hosts_json_path))

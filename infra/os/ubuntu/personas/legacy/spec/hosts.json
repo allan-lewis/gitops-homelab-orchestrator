@@ -26,24 +26,6 @@
         "vars": {}
       }
     },
-    "cujo": {
-      "ip": "192.168.86.226",
-      "ssh_user": "lab",
-      "tags": ["ubuntu", "legacy"],
-
-      "terraform": {},
-
-      "ansible": {
-        "group_memberships": ["ubuntu_legacy"],
-
-        "vars": {
-          "backup_runner_cron_hour": "*",
-          "backup_runner_cron_minute": "45",
-          "backup_runner_healthchecks_url": "https://hc-ping.com/dc76e9a3-61ac-41ab-b609-df385ef69e29",
-          "backup_runner_healthchecks_status": "https://healthchecks.io/b/2/280d2b18-81e3-4b55-a3b4-570d60ce8335.json"
-        }
-      }
-    },
     "flagg": {
       "ip": "192.168.86.205",
       "ssh_user": "lab",

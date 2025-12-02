@@ -122,8 +122,8 @@ l3-ubuntu-tinker-inventory: ## Render L3 Ansible inventory for Ubuntu Tinker hos
 
 # Usage examples:
 #   make l3-<os>-<persona>-converge                          	# all hosts, all tags
-#   make l3-<os>-<persona>-converge L3_LIMIT=blaine          	# single host
-#   make l3-<os>-<persona>-converge L3_LIMIT='blaine:patricia'  # Ansible limit expression
+#   make l3-<os>-<persona>-converge L3_LIMIT=host1          	# single host
+#   make l3-<os>-<persona>-converge L3_LIMIT='host1:host2'  # Ansible limit expression
 #   make l3-<os>-<persona>-converge L3_TAGS=base             	# only "base" tag
 #   make l3-<os>-<persona>-converge L3_TAGS=base,desktop     	# multiple tags
 
