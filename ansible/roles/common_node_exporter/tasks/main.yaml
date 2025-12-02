@@ -1,0 +1,120 @@
+---
+- name: Ensure OS family is supported
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.os_family in ["Debian", "Archlinux"]
+    fail_msg: "common_node_exporter role currently supports only Debian-family and Archlinux hosts."
+    success_msg: "OS family {{ ansible_facts.os_family }} is supported by common_node_exporter."
+
+# Optional prereqs
+- name: Install prerequisites on Debian-family
+  ansible.builtin.apt:
+    name: "{{ common_node_exporter_prereq_packages_debian }}"
+    state: present
+    update_cache: true
+  when:
+    - common_node_exporter_manage_prereqs
+    - ansible_facts.os_family == "Debian"
+  become: true
+
+- name: Install prerequisites on Archlinux
+  community.general.pacman:
+    name: "{{ common_node_exporter_prereq_packages_arch }}"
+    state: present
+    update_cache: true
+  when:
+    - common_node_exporter_manage_prereqs
+    - ansible_facts.os_family == "Archlinux"
+  become: true
+
+# User / group
+- name: Ensure node_exporter group exists
+  ansible.builtin.group:
+    name: "{{ common_node_exporter_group }}"
+    system: true
+  become: true
+
+- name: Ensure node_exporter user exists
+  ansible.builtin.user:
+    name: "{{ common_node_exporter_user }}"
+    group: "{{ common_node_exporter_group }}"
+    system: true
+    shell: "/usr/sbin/nologin"
+    create_home: false
+  become: true
+
+# Download + install
+- name: Ensure temporary directory for node_exporter exists
+  ansible.builtin.file:
+    path: "{{ common_node_exporter_tmp_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Download node_exporter tarball
+  ansible.builtin.get_url:
+    url: "{{ common_node_exporter_download_url }}"
+    dest: "{{ common_node_exporter_tarball_path }}"
+    mode: "0644"
+    checksum: "{{ common_node_exporter_checksum | default(omit) if common_node_exporter_checksum | length > 0 else omit }}"
+  become: true
+
+- name: Unarchive node_exporter tarball
+  ansible.builtin.unarchive:
+    src: "{{ common_node_exporter_tarball_path }}"
+    dest: "{{ common_node_exporter_tmp_dir }}"
+    remote_src: true
+    creates: "{{ common_node_exporter_tmp_dir }}/node_exporter-{{ common_node_exporter_version }}.{{ common_node_exporter_arch }}"
+  become: true
+
+- name: Install node_exporter binary
+  ansible.builtin.copy:
+    src: "{{ common_node_exporter_tmp_dir }}/node_exporter-{{ common_node_exporter_version }}.{{ common_node_exporter_arch }}/node_exporter"
+    dest: "{{ common_node_exporter_binary_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  notify: Restart node_exporter
+  become: true
+
+- name: Ensure textfile directory exists (if managed)
+  ansible.builtin.file:
+    path: "{{ common_node_exporter_textfile_dir }}"
+    state: directory
+    owner: "{{ common_node_exporter_user }}"
+    group: "{{ common_node_exporter_group }}"
+    mode: "0755"
+  when: common_node_exporter_manage_textfile_dir
+  become: true
+
+# Systemd + env
+- name: Render node_exporter environment file
+  ansible.builtin.template:
+    src: "node_exporter.env.j2"
+    dest: "{{ common_node_exporter_env_file_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node_exporter
+  become: true
+
+- name: Render node_exporter systemd unit
+  ansible.builtin.template:
+    src: "node_exporter.service.j2"
+    dest: "{{ common_node_exporter_systemd_unit_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node_exporter
+  become: true
+
+- name: Ensure node_exporter service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ common_node_exporter_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

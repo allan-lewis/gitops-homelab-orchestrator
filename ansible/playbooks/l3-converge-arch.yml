@@ -1,6 +1,5 @@
 ---
 #### GENERAL OS CONVERGENCE
-
 - name: Arch OS Convergence
   hosts: all
   gather_facts: true
@@ -25,17 +24,4 @@
     - { role: common_node_exporter,       tags: ["node_exporter"],    when: is_node_exporter_enabled | default(false) }
 
 #### DOCKER MONITORING CONVERGENCE
-
-## TODO - MOVE TO EXTERNAL PLAYBOOK FOR UBUNTU RE-USE
-- name: Monitoring Docker Services
-  hosts: docker_compose_monitoring
-  become: yes
-  gather_facts: yes
-  tags: [docker_monitoring]
-
-  roles:
-    - role: common_docker_compose_services
-      vars:
-        compose_app_name: monitoring
-        compose_source_type: template
-        compose_template_src: "templates/docker-compose/monitoring.compose.yaml.j2"
+- import_playbook: l3-converge-docker-monitoring.yml

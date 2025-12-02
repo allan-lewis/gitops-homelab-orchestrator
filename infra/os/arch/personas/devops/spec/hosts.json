@@ -18,6 +18,7 @@
         "group_memberships": ["arch_devops"],
 
         "vars": {
+          "is_node_exporter_enabled": true,
           "ansible_environment": "production",
           "is_backup_enabled": true,
           "backup_runner_cron_hour": "*",

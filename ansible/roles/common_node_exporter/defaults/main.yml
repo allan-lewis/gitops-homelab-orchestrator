@@ -1,0 +1,54 @@
+---
+# Version & download details
+common_node_exporter_version: "1.8.2"
+common_node_exporter_arch: "linux-amd64"
+
+# GitHub URL for the tarball
+common_node_exporter_download_url: >-
+  https://github.com/prometheus/node_exporter/releases/download/v{{ common_node_exporter_version }}/node_exporter-{{ common_node_exporter_version }}.{{ common_node_exporter_arch }}.tar.gz
+
+# Optional checksum for the tarball (strongly recommended; set to e.g. "sha256:...").
+# Leave as empty string to skip checksum validation.
+common_node_exporter_checksum: ""
+
+# Where to place the downloaded tarball and extracted files during install
+common_node_exporter_tmp_dir: "/tmp/node_exporter-{{ common_node_exporter_version }}"
+common_node_exporter_tarball_path: "{{ common_node_exporter_tmp_dir }}.tar.gz"
+
+# Final binary location
+common_node_exporter_binary_path: "/usr/local/bin/node_exporter"
+
+# Service account
+common_node_exporter_user: "node_exporter"
+common_node_exporter_group: "node_exporter"
+
+# Textfile collector directory (if you use it for custom metrics)
+common_node_exporter_manage_textfile_dir: true
+common_node_exporter_textfile_dir: "/var/lib/node_exporter/textfile"
+
+# Listen address
+common_node_exporter_listen_address: "0.0.0.0:9100"
+
+# Extra CLI flags for node_exporter (list form is easier to manage)
+# These will be rendered into NODE_EXPORTER_OPTS in the env file.
+common_node_exporter_extra_flags:
+  - "--web.listen-address={{ common_node_exporter_listen_address }}"
+  - "--collector.textfile.directory={{ common_node_exporter_textfile_dir }}"
+
+# Whether to manage prereq packages (curl, tar, etc.) via the distro pkg manager.
+# Turn this on if you want the role to ensure these exist.
+common_node_exporter_manage_prereqs: true
+common_node_exporter_prereq_packages_debian:
+  - curl
+  - tar
+
+common_node_exporter_prereq_packages_arch:
+  - curl
+  - tar
+
+# Systemd unit & env file paths
+common_node_exporter_systemd_unit_path: "/etc/systemd/system/node_exporter.service"
+common_node_exporter_env_file_path: "/etc/default/node_exporter"
+
+# Service name (override if you want a different unit name)
+common_node_exporter_service_name: "node_exporter"
