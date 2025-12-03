@@ -1,0 +1,127 @@
+---
+## OPENVPN SETUP
+- name: fail if required variables are missing
+  fail:
+    msg: "missing required variable: {{ item }}"
+  when: (lookup('vars', item, default='') | length) == 0
+  loop:
+    - vpn_config
+    - vpn_user
+    - vpn_pass
+
+- name: ensure openvpn is installed
+  apt:
+    name: openvpn
+    state: present
+    update_cache: yes
+
+- name: write expressvpn config file with correct creds path
+  copy:
+    content: "{{ vpn_config | regex_replace('^auth-user-pass.*', 'auth-user-pass ' ~ vpn_creds_path, multiline=True) }}"
+    dest: "{{ vpn_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: write credentials file
+  copy:
+    content: |
+      {{ vpn_user }}
+      {{ vpn_pass }}
+    dest: "{{ vpn_creds_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: enable and start openvpn client service
+  systemd:
+    name: "openvpn-client@expressvpn.service"
+    enabled: true
+    state: started
+
+- name: restart vpn service nightly at midnight
+  ansible.builtin.cron:
+    name: "restart vpn service"
+    user: root
+    minute: "0"
+    hour: "0"
+    job: "systemctl restart openvpn-client@expressvpn.service"
+
+## KILL SWITCH
+- name: ensure nftables is installed
+  ansible.builtin.apt:
+    name: nftables
+    state: present
+    update_cache: yes
+
+- name: read openvpn conf
+  ansible.builtin.slurp:
+    src: "{{ openvpn_conf }}"
+  register: ovpn_raw
+
+- name: decode openvpn conf
+  ansible.builtin.set_fact:
+    ovpn_text: "{{ ovpn_raw.content | b64decode }}"
+
+# optional overrides you can set in inventory/vars if parsing ever fails:
+#   override_remote_host: "uk-east-london-ca-version-2.expressnetw.com"
+#   override_vpn_port: "1195"
+- name: apply optional overrides
+  ansible.builtin.set_fact:
+    parsed_remote_host: "{{ override_remote_host | default('', true) }}"
+    parsed_remote_port: "{{ override_vpn_port | default('', true) }}"
+  when: override_remote_host is defined or override_vpn_port is defined
+
+- name: extract remote pairs (first match wins)
+  ansible.builtin.set_fact:
+    remote_pairs: "{{ ovpn_text | regex_findall('(?m)^\\s*remote\\s+(\\S+)\\s+(\\d+)') }}"
+  when: (parsed_remote_host | default('') | length) == 0 or (parsed_remote_port | default('') | length) == 0
+
+- name: select parsed remote host/port (from config)
+  ansible.builtin.set_fact:
+    parsed_remote_host: "{{ (remote_pairs | first | default(['','']))[0] if (parsed_remote_host | default('') | length) == 0 else parsed_remote_host }}"
+    parsed_remote_port: "{{ (remote_pairs | first | default(['','']))[1] if (parsed_remote_port | default('') | length) == 0 else parsed_remote_port }}"
+  when: (parsed_remote_host | default('') | length) == 0 or (parsed_remote_port | default('') | length) == 0
+
+- name: show candidate remote lines when parsing fails
+  ansible.builtin.debug:
+    msg: "{{ ovpn_text.splitlines() | select('match', '^\\s*remote\\b') | list }}"
+  when: parsed_remote_host | default('') | length == 0 or parsed_remote_port | default('') | length == 0
+
+- name: fail if we cannot parse a remote host/port
+  ansible.builtin.fail:
+    msg: "could not parse remote host/port from {{ openvpn_conf }}"
+  when: parsed_remote_host | default('') | length == 0 or parsed_remote_port | default('') | length == 0
+
+- name: decide vpn port
+  ansible.builtin.set_fact:
+    effective_vpn_port: "{{ (vpn_port | length > 0) | ternary(vpn_port, parsed_remote_port) }}"
+
+- name: resolve vpn server ipv4 addresses
+  ansible.builtin.command: getent ahostsv4 {{ parsed_remote_host }}
+  register: getent_out
+  changed_when: false
+
+- name: build vpn_server_ips list
+  ansible.builtin.set_fact:
+    vpn_server_ips: "{{ (getent_out.stdout_lines | map('regex_replace', '^(\\S+).*', '\\1') | list) | unique }}"
+
+- name: fail if no vpn server ips resolved
+  ansible.builtin.fail:
+    msg: "no vpn server IPs resolved for {{ parsed_remote_host }}"
+  when: vpn_server_ips | length == 0
+
+- name: render nftables rules
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    mode: '0644'
+
+- name: restart services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+    enabled: true
+  loop:
+    - "nftables"
+    - "{{ openvpn_unit }}"

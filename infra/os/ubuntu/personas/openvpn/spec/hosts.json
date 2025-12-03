@@ -17,7 +17,11 @@
       "ansible": {
         "group_memberships": ["ubuntu_openvpn"],
 
-        "vars": {}
+        "vars": {
+          "is_openvpn_enabled": true,
+          "vpn_lan_net": "192.168.86.0/24",
+          "vpn_dns_ip": "192.168.86.205"
+        }
       }
     }
   },
@@ -31,7 +35,9 @@
 
     "groups": {
       "ubuntu_openvpn": {
-        "vars": { }
+        "vars": { 
+          "is_node_exporter_enabled": true
+        }
       }
     }
   }

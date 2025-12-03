@@ -1,0 +1,27 @@
+---
+## OPENVPN SETUP
+vpn_config: "{{ lookup('env', 'EXPRESSVPN_CONFIG') | default('', true) }}"
+vpn_user: "{{ lookup('env', 'EXPRESSVPN_USER') | default('', true) }}"
+vpn_pass: "{{ lookup('env', 'EXPRESSVPN_PASS') | default('', true) }}"
+
+vpn_config_path: /etc/openvpn/client/expressvpn.conf
+vpn_creds_path: /etc/openvpn/client/credentials
+
+## KILL SWITCH
+# interfaces & lan
+lan_if: "eth0"
+wan_if: "eth0"
+lan_net: "{{ vpn_lan_net }}" # "192.168.86.0/24"
+dns_ip: "{{ vpn_dns_ip }}" #"192.168.86.205"
+
+# openvpn service + conf
+openvpn_unit: "openvpn-client@expressvpn.service"
+openvpn_conf: "/etc/openvpn/client/expressvpn.conf"
+
+# optional override; if empty we use the port parsed from the openvpn conf
+vpn_port: ""
+
+# docker integration
+docker_bridge_if: "docker0"
+docker_br_wildcard: "br-*"
+veth_wildcard: "veth*"

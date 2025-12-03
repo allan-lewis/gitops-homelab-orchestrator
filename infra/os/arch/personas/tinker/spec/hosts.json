@@ -1,9 +1,9 @@
 {
   "hosts": {
-    "todash": {
-      "ip": "192.168.86.69",
+    "cujo": {
+      "ip": "192.168.86.217",
       "ssh_user": "lab",
-      "tags": ["terraform", "arch", "tinker"],
+      "tags": ["orchestrator", "terraform", "arch", "tinker"],
 
       "terraform": {
         "cpu": 2,
@@ -11,7 +11,7 @@
         "disk_gb": 32,
         "template_ref": "arch/tinker/stable",
         "node": "polaris",
-        "ipconfig": "ip=192.168.86.69/24,gw=192.168.86.1"
+        "ipconfig": "ip=192.168.86.217/24,gw=192.168.86.1"
       },
 
       "ansible": {
@@ -31,7 +31,9 @@
 
     "groups": {
       "arch_tinker": {
-        "vars": { }
+        "vars": {
+          "is_docker_enabled": true
+         }
       }
     }
   }

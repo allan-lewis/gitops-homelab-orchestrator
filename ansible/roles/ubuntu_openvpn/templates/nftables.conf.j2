@@ -1,0 +1,69 @@
+flush ruleset
+
+table inet filter {
+  set vpn_servers_v4 {
+    type ipv4_addr
+    elements = { {% for ip in vpn_server_ips %}{{ ip }}{% if not loop.last %}, {% endif %}{% endfor %} }
+  }
+
+  chain input {
+    type filter hook input priority 0;
+    policy accept
+  }
+
+  chain forward {
+    type filter hook forward priority 0;
+    policy drop
+
+    # keep existing/related, drop ipv6
+    ct state { established, related } accept
+    meta nfproto ipv6 drop
+
+    # container egress to vpn
+    iifname "{{ docker_br_wildcard }}" oifname "tun0" accept
+    iifname "{{ docker_bridge_if }}" oifname "tun0" accept
+    iifname "{{ veth_wildcard }}"    oifname "tun0" accept
+
+    # lan <-> containers for published ports
+    iifname "{{ lan_if }}"     oifname "{{ docker_br_wildcard }}" accept
+    iifname "{{ lan_if }}"     oifname "{{ docker_bridge_if }}"   accept
+
+    # containers -> lan dns
+    iifname "{{ docker_br_wildcard }}" oifname "{{ lan_if }}" ip daddr {{ dns_ip }} udp dport 53 accept
+    iifname "{{ docker_br_wildcard }}" oifname "{{ lan_if }}" ip daddr {{ dns_ip }} tcp dport 53 accept
+    iifname "{{ docker_bridge_if }}"   oifname "{{ lan_if }}" ip daddr {{ dns_ip }} udp dport 53 accept
+    iifname "{{ docker_bridge_if }}"   oifname "{{ lan_if }}" ip daddr {{ dns_ip }} tcp dport 53 accept
+  }
+
+  chain output {
+    type filter hook output priority 0;
+    policy drop
+
+    # keep existing/related, block ipv6
+    ct state { established, related } accept
+    meta nfproto ipv6 drop
+
+    # localhost + vpn egress
+    oifname "lo"   accept
+    oifname "tun0" accept
+
+    # allow all lan egress from the host (dns and any other lan services)
+    ip daddr {{ lan_net }} accept
+
+    # allow contacting expressvpn servers on the wan for (re)connect
+    oifname "{{ wan_if }}" ip daddr @vpn_servers_v4 udp dport {{ effective_vpn_port }} accept
+
+    # dhcp (if needed on wan)
+    oifname "{{ wan_if }}" udp dport 67 accept
+    oifname "{{ wan_if }}" udp sport 67 accept
+  }
+}
+
+table ip nat {
+  chain prerouting { type nat hook prerouting priority -100; }
+  chain postrouting {
+    type nat hook postrouting priority 100;
+    # masquerade anything leaving over the vpn
+    oifname "tun0" masquerade
+  }
+}

@@ -3,7 +3,7 @@
     "langolier": {
       "ip": "192.168.86.216",
       "ssh_user": "lab",
-      "tags": ["terraform", "arch", "devops"],
+      "tags": ["orchestrator", "terraform", "arch", "devops"],
 
       "terraform": {
         "cpu": 2,
