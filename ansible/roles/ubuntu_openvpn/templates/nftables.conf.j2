@@ -19,6 +19,9 @@ table inet filter {
     ct state { established, related } accept
     meta nfproto ipv6 drop
 
+    # lan hosts using this box as gateway -> vpn
+    iifname "{{ lan_if }}" oifname "tun0" accept
+
     # container egress to vpn
     iifname "{{ docker_br_wildcard }}" oifname "tun0" accept
     iifname "{{ docker_bridge_if }}" oifname "tun0" accept
