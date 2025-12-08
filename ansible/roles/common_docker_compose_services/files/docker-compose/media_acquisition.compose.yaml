@@ -63,21 +63,21 @@ services:
   #     - /mnt/media-acquisition/downloads:/downloads
   #     - /mnt/media-acquisition/tv:/tv
 
-  # transmission:
-  #   image: lscr.io/linuxserver/transmission:latest
-  #   container_name: transmission
-  #   restart: unless-stopped
-  #   networks: [media]
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/New_York
-  #   ports:
-  #     - "9091:9091"
-  #   volumes:
-  #     - /etc/transmission:/config
-  #     - /var/lib/transmission/watch:/watch
-  #     - /mnt/media-acquisition/downloads:/downloads
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    restart: unless-stopped
+    networks: [media]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    ports:
+      - "9091:9091"
+    volumes:
+      - /etc/transmission:/config
+      - /var/lib/transmission/watch:/watch
+      - /mnt/media-acquisition/downloads:/downloads
 
 networks:
   media: {}

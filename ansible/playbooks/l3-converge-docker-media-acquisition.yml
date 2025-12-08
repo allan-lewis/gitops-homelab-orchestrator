@@ -16,7 +16,32 @@
             uid: 1000
             gid: 1000
             mode: "0755"
+          - path: "/etc/lidarr"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/etc/radarr"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/etc/sonarr"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/etc/transmission"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
           - path: "/var/lib/jackett/downloads"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/var/lib/transmission/watch"
             create: true
             uid: 1000
             gid: 1000
