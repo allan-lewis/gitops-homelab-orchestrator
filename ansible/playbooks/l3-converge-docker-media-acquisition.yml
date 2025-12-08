@@ -11,11 +11,6 @@
         compose_source_type: file
         compose_file_src: files/docker-compose/media_acquisition.compose.yaml
         compose_paths:
-          - path: "/etc/jackett"
-            create: true
-            uid: 1000
-            gid: 1000
-            mode: "0755"
           - path: "/etc/lidarr"
             create: true
             uid: 1000
