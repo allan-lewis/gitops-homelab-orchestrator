@@ -1,0 +1,40 @@
+{
+  "hosts": {
+    "patricia": {
+      "ip": "192.168.86.224",
+      "ssh_user": "lab",
+      "tags": ["orchestrator", "terraform", "ubuntu", "media"],
+
+      "terraform": {
+        "cpu": 4,
+        "memory_mb": 8192,
+        "disk_gb": 128,
+        "template_ref": "ubuntu/media-acquisition/stable",
+        "node": "polaris",
+        "ipconfig": "ip=192.168.86.224/24,gw=192.168.86.223"
+      },
+
+      "ansible": {
+        "group_memberships": ["ubuntu_media_acquisition", "docker_compose_monitoring"],
+
+        "vars": {}
+      }
+    }
+  },
+
+  "ansible": {
+    "all": {
+      "vars": {
+        "ansible_python_interpreter": "/usr/bin/python3"
+      }
+    },
+
+    "groups": {
+      "ubuntu_media_acquisition": {
+        "vars": { 
+          "is_docker_enabled": true
+        }
+      }
+    }
+  }
+}
