@@ -15,9 +15,11 @@
       },
 
       "ansible": {
-        "group_memberships": ["ubuntu_media_acquisition", "docker_compose_monitoring"],
+        "group_memberships": ["docker_compose_media_acquisition", "docker_compose_monitoring"],
 
-        "vars": {}
+        "vars": {
+          "media_acquisition_nfs_server": "192.168.86.106"
+        }
       }
     }
   },
@@ -32,7 +34,8 @@
     "groups": {
       "ubuntu_media_acquisition": {
         "vars": { 
-          "is_docker_enabled": true
+          "is_docker_enabled": true,
+          "is_media_acquisition_enabled": true
         }
       }
     }

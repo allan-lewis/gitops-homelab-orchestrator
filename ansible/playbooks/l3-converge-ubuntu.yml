@@ -22,3 +22,6 @@
 
 #### DOCKER MONITORING CONVERGENCE
 - import_playbook: l3-converge-docker-monitoring.yml
+
+#### MEDIA ACQUISITION CONVERGENCE
+- import_playbook: l3-converge-docker-media-acquisition.yml

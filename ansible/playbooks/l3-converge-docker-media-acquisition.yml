@@ -1,0 +1,28 @@
+- name: Media Acquistion Docker Services
+  hosts: docker_compose_media_acquisition
+  become: yes
+  gather_facts: yes
+  tags: [docker_media_acquisition]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: media_acquisition
+        compose_source_type: file
+        compose_file_src: files/docker-compose/media_acquisition.compose.yaml
+        compose_paths:
+          - path: "/etc/jackett"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/var/lib/jackett/downloads"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+          - path: "/mnt/media-acquisition"
+            nfs: true
+            nfs_server: "{{ media_acquisition_nfs_server }}"
+            nfs_path: "/mnt/pool1/media-acquisition"
+            nfs_opts: "rw"
