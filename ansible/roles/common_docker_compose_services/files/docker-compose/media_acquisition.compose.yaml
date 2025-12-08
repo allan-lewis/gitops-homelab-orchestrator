@@ -15,53 +15,53 @@ services:
       - /etc/jackett:/config
       - /var/lib/jackett/downloads:/downloads
 
-  # lidarr:
-  #   image: lscr.io/linuxserver/lidarr:latest
-  #   container_name: lidarr
-  #   restart: unless-stopped
-  #   networks: [media]
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/New_York
-  #   ports:
-  #     - "8686:8686"
-  #   volumes:
-  #     - /etc/lidarr:/config
-  #     - /mnt/media-acquisition/downloads:/downloads
-  #     - /mnt/media-acquisition/music:/music
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    networks: [media]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    ports:
+      - "8686:8686"
+    volumes:
+      - /etc/lidarr:/config
+      - /mnt/media-acquisition/downloads:/downloads
+      - /mnt/media-acquisition/music:/music
 
-  # radarr:
-  #   image: lscr.io/linuxserver/radarr:latest
-  #   container_name: radarr
-  #   restart: unless-stopped
-  #   networks: [media]
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/New_York
-  #   ports:
-  #     - "7878:7878"
-  #   volumes:
-  #     - /etc/radarr:/config
-  #     - /mnt/media-acquisition/downloads:/downloads
-  #     - /mnt/media-acquisition/movies:/movies
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    networks: [media]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    ports:
+      - "7878:7878"
+    volumes:
+      - /etc/radarr:/config
+      - /mnt/media-acquisition/downloads:/downloads
+      - /mnt/media-acquisition/movies:/movies
 
-  # sonarr:
-  #   image: lscr.io/linuxserver/sonarr:latest
-  #   container_name: sonarr
-  #   restart: unless-stopped
-  #   networks: [media]
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/New_York
-  #   ports:
-  #     - "8989:8989"
-  #   volumes:
-  #     - /etc/sonarr:/config
-  #     - /mnt/media-acquisition/downloads:/downloads
-  #     - /mnt/media-acquisition/tv:/tv
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    networks: [media]
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    ports:
+      - "8989:8989"
+    volumes:
+      - /etc/sonarr:/config
+      - /mnt/media-acquisition/downloads:/downloads
+      - /mnt/media-acquisition/tv:/tv
 
   transmission:
     image: lscr.io/linuxserver/transmission:latest
