@@ -18,7 +18,43 @@
         "group_memberships": ["docker_compose_media_acquisition", "docker_compose_monitoring"],
 
         "vars": {
-          "media_acquisition_nfs_server": "192.168.86.106"
+          "is_backup_enabled": true,
+          "backup_runner_cron_hour": "*",
+          "backup_runner_cron_minute": "50",
+          "backup_runner_user": "allan",
+          "backup_runner_remote_host": "192.168.86.106",
+          "media_acquisition_nfs_server": "192.168.86.106",
+          "is_ssh_keys_enabled": true,
+          "ssh_keys_install_private_for_ansible_user": true,
+          "ssh_keys_install_public_for_ansible_user": true,
+          "ssh_keys_install_private_for_root": true,
+          "ssh_keys_install_public_for_root": true,
+          "backup_runner_volumes": [
+            { 
+              "src": "/etc/lidarr",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/lidarr/config" 
+            },
+            { 
+              "src": "/etc/prowlarr",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/prowlarr/config" 
+            },
+            { 
+              "src": "/etc/radarr",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/radarr/config" 
+            },
+            { 
+              "src": "/etc/sonarr",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/sonarr/config" 
+            },
+            { 
+              "src": "/etc/transmission",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/config" 
+            },
+            { 
+              "src": "/var/lib/transmission/watch",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/watch" 
+            }
+          ]
         }
       }
     }
@@ -32,7 +68,7 @@
     },
 
     "groups": {
-      "ubuntu_media_acquisition": {
+      "docker_compose_media_acquisition": {
         "vars": { 
           "is_docker_enabled": true,
           "is_media_acquisition_enabled": true
