@@ -1,20 +1,5 @@
 services:
 
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: jackett
-    restart: unless-stopped
-    networks: [media]
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    ports:
-      - "9117:9117"
-    volumes:
-      - /etc/jackett:/config
-      - /var/lib/jackett/downloads:/downloads
-
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr

@@ -36,11 +36,6 @@
             uid: 1000
             gid: 1000
             mode: "0755"
-          - path: "/var/lib/jackett/downloads"
-            create: true
-            uid: 1000
-            gid: 1000
-            mode: "0755"
           - path: "/var/lib/transmission/watch"
             create: true
             uid: 1000
