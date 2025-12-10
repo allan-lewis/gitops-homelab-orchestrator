@@ -17,7 +17,9 @@
     - { role: arch_docker_compose,        tags: ["docker"],           when: is_docker_enabled | default(false) }
     - { role: arch_devops,                tags: ["devops"],           when: is_devops_enabled | default(false)}
     ## CROSS-OS; DEFAULT OFF
+    #### order for these 3 matters - install SSH keys, restore first, then schedule backups
     - { role: common_install_ssh_keys,    tags: ["ssh_keys"],         when: is_ssh_keys_enabled | default(false) }
+    - { role: common_backup_restore,      tags: ["restore"],          when: is_restore_enabled | default(false) }
     - { role: common_backup_runner,       tags: ["backup"],           when: is_backup_enabled | default(false) }
     - { role: common_s3_local_mirror,     tags: ["s3_mirror"],        when: is_s3_mirror_enabled | default(false) }
     - { role: common_postgres_db_backup,  tags: ["db_backup"],        when: is_db_backup_enabled | default(false) }

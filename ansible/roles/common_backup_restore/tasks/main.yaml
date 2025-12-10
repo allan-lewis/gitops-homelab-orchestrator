@@ -1,0 +1,125 @@
+---
+- name: Ensure rsync is installed
+  ansible.builtin.package:
+    name: rsync
+    state: present
+
+# Expected vars:
+# backup_runner_volumes:
+#   - { src: "/etc/lidarr", dest: "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/lidarr/config" }
+#   ...
+# backup_restore_owner: someuser   # optional
+# backup_restore_group: somegroup  # optional
+
+- name: Verify SSH connectivity to backup remote host (fail fast)
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -o
+      - BatchMode=yes
+      - -o
+      - StrictHostKeyChecking=no
+      - -o
+      - UserKnownHostsFile=/dev/null
+      - -o
+      - ConnectTimeout=5
+      - "{{ backup_runner_user }}@{{ backup_runner_remote_host }}"
+      - "true"
+  register: backup_ssh_check
+  changed_when: false
+  failed_when: backup_ssh_check.rc != 0
+  timeout: 10
+
+- name: Check local src directories
+  ansible.builtin.stat:
+    path: "{{ item.src }}"
+  loop: "{{ backup_runner_volumes }}"
+  loop_control:
+    label: "{{ item.src }}"
+  register: backup_local_stats
+
+- name: Check existence of remote backup directories
+  ansible.builtin.command:
+    argv:
+      - ssh
+      - -o
+      - BatchMode=yes
+      - -o
+      - StrictHostKeyChecking=no
+      - -o
+      - UserKnownHostsFile=/dev/null
+      - -o
+      - ConnectTimeout=5
+      - "{{ (item.dest | split(':', 1))[0] }}"            # user@host
+      - "test -d '{{ (item.dest | split(':', 1))[1] }}'"  # remote path
+  loop: "{{ backup_runner_volumes }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  register: backup_remote_checks
+  changed_when: false              # pure check
+  failed_when: false               # treat "doesn't exist" or timeout as "no backup yet"
+  timeout: 10                      # safety net around the ssh call itself
+
+- name: Debug local src directory existence
+  ansible.builtin.debug:
+    msg:
+      src: "{{ item.item.src }}"
+      exists: "{{ item.stat.exists }}"
+      is_dir: "{{ item.stat.isdir | default(false) }}"
+  loop: "{{ backup_local_stats.results }}"
+  loop_control:
+    label: "{{ item.item.src }}"
+
+- name: Debug remote dest directory existence
+  ansible.builtin.debug:
+    msg:
+      dest: "{{ item.item.dest }}"
+      ssh_target: "{{ (item.item.dest | split(':', 1))[0] }}"
+      remote_path: "{{ (item.item.dest | split(':', 1))[1] }}"
+      rc: "{{ item.rc }}"
+      exists: "{{ item.rc == 0 }}"
+      stderr: "{{ item.stderr | default('') }}"
+  loop: "{{ backup_remote_checks.results }}"
+  loop_control:
+    label: "{{ item.item.dest }}"
+
+- name: Restore backup_runner volumes from remote backup
+  ansible.builtin.command:
+    argv:
+      - rsync
+      - -aHAX
+      - --numeric-ids
+      - -e
+      - "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5"
+      - "{{ item.dest }}/"
+      - "{{ item.src }}/"
+  loop: "{{ backup_runner_volumes }}"
+  loop_control:
+    label: "{{ item.src }}"
+    index_var: idx
+  when:
+    # remote dest exists (test -d rc == 0) ...
+    - backup_remote_checks.results[idx].rc | int == 0
+    # ... and local src does NOT exist
+    - not backup_local_stats.results[idx].stat.exists
+  register: backup_restore_results
+
+- name: Fix ownership on newly restored volumes
+  ansible.builtin.file:
+    path: "{{ item.item.src }}"
+    owner: "{{ backup_restore_owner | default(omit) }}"
+    group: "{{ backup_restore_group | default(omit) }}"
+    recurse: true
+  loop: "{{ backup_restore_results.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.src | default('UNKNOWN') }}"
+  when:
+    # Only if caller wants us to manage ownership
+    - (backup_restore_owner is defined) or
+      (backup_restore_group is defined)
+    # Skip items where the restore task was skipped entirely
+    - not (item.skipped | default(false))
+    # Only when rsync actually ran and succeeded
+    - (item.rc | default(1) | int) == 0
+    # Only if rsync reported a change (directory actually restored)
+    - item.changed | default(false)

@@ -23,7 +23,24 @@
           "arch_desktop_display_manager": "auto",
           "arch_desktop_enable_bluetooth": true,
           "arch_desktop_enable_printing": false,
-          "arch_desktop_extra_packages": []
+          "arch_desktop_extra_packages": [],
+          "is_ssh_keys_enabled": true,
+          "ssh_keys_install_private_for_ansible_user": false,
+          "ssh_keys_install_public_for_ansible_user": false,
+          "ssh_keys_install_private_for_root": true,
+          "ssh_keys_install_public_for_root": true,
+          "is_restore_enabled": true,
+          "backup_restore_owner": "lab",
+          "backup_restore_group": "lab",
+          "is_backup_enabled": true,
+          "backup_runner_user": "allan",
+          "backup_runner_remote_host": "192.168.86.106",
+          "backup_runner_volumes": [
+            { 
+              "src": "/etc/backup-runner-test",
+              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/backp_runner_test" 
+            }
+          ]
         }
       }
     }

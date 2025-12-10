@@ -18,6 +18,9 @@
         "group_memberships": ["docker_compose_media_acquisition", "docker_compose_monitoring"],
 
         "vars": {
+          "is_restore_enabled": true,
+          "backup_restore_owner": "lab",
+          "backup_restore_group": "lab",
           "is_backup_enabled": true,
           "backup_runner_cron_hour": "*",
           "backup_runner_cron_minute": "50",
