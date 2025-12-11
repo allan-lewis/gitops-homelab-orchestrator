@@ -8,7 +8,15 @@
       "terraform": {},
 
       "ansible": {
-        "group_memberships": ["docker_compose_monitoring", "ubuntu_core"],
+        "group_memberships": [
+          "docker_compose_cloudflare",
+          "docker_compose_gatus",
+          "docker_compose_monitoring",
+          "docker_compose_pihole",
+          "docker_compose_traefik",
+          "docker_compose_twingate",
+          "ubuntu_core"
+        ],
 
         "vars": {
           "backup_runner_cron_hour": "*",

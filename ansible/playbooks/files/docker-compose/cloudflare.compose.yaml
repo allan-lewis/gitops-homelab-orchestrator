@@ -1,0 +1,11 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:2025.11.1
+    command: ["tunnel", "--metrics", "0.0.0.0:2000", "run", "--token", "${CLOUDFLARE_TUNNEL_TOKEN}"]
+    environment:
+      - CLOUDFLARE_TUNNEL_TOKEN
+    # expose :2000 if you want to scrape metrics from host/network
+    ports:
+      - "2000:2000"
+    restart: unless-stopped
+

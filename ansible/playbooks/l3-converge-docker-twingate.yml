@@ -1,0 +1,17 @@
+- name: Twingate Docker Services
+  hosts: docker_compose_twingate
+  become: yes
+  gather_facts: yes
+  tags: [docker_twingate]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: twingate
+        compose_source_type: template
+        compose_template_src: "templates/docker-compose/twingate.compose.yaml.j2"
+        compose_env:
+          TWINGATE_NETWORK_NAME: "{{ lookup('env', 'TWINGATE_NETWORK_NAME') }}"
+          VALIANT_STINGRAY_ACCESS_TOKEN: "{{ lookup('env', 'TWINGATE_VALIANT_STINGRAY_ACCESS_TOKEN') }}"
+          VALIANT_STINGRAY_REFRESH_TOKEN: "{{ lookup('env', 'TWINGATE_VALIANT_STINGRAY_REFRESH_TOKEN') }}"
+

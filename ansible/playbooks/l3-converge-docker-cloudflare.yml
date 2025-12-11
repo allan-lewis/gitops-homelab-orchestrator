@@ -1,0 +1,15 @@
+- name: Cloudflare Docker Services
+  hosts: docker_compose_cloudflare
+  become: yes
+  gather_facts: yes
+  tags: [docker_cloudflare]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: cloudflare
+        compose_source_type: file
+        compose_file_src: files/docker-compose/cloudflare.compose.yaml
+        compose_env:
+          CLOUDFLARE_TUNNEL_TOKEN: "{{ lookup('env','CLOUDFLARE_TUNNEL_TOKEN') }}"
+

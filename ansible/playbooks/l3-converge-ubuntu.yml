@@ -36,3 +36,10 @@
 
 #### MEMOS CONVERGENCE
 - import_playbook: l3-converge-docker-memos.yml
+
+#### CLOUDFLARE CONVERGENCE
+- import_playbook: l3-converge-docker-cloudflare.yml
+
+#### TWINGATE CONVERGENCE
+- import_playbook: l3-converge-docker-twingate.yml
+
