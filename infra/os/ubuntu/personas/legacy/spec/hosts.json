@@ -1,23 +1,5 @@
 {
   "hosts": {
-    "flagg": {
-      "ip": "192.168.86.205",
-      "ssh_user": "lab",
-      "tags": ["ubuntu", "legacy"],
-
-      "terraform": {},
-
-      "ansible": {
-        "group_memberships": ["ubuntu_legacy"],
-
-        "vars": {
-          "backup_runner_cron_hour": "*",
-          "backup_runner_cron_minute": "15",
-          "backup_runner_healthchecks_url": "https://hc-ping.com/fc7034f6-cb5d-4965-91ae-017aeb4591da",
-          "backup_runner_healthchecks_status": "https://healthchecks.io/b/2/125505b2-327a-40e1-91e2-f5e5dd3152db.json"
-        }
-      }
-    },
     "misery": {
       "ip": "192.168.86.227",
       "ssh_user": "lab",
