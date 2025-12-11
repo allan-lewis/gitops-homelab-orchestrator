@@ -16,7 +16,8 @@
 
       "ansible": {
         "group_memberships": [
-          "docker_compose_it_tools", 
+          "docker_compose_it_tools",
+          "docker_compose_memos", 
           "docker_compose_ngb", 
           "docker_compose_monitoring"
         ],
@@ -98,11 +99,10 @@
     },
 
     "groups": {
-      "docker_compose_monitoring": {
-        "vars": {}
-      },
-      "docker_compose_media_acquisition": {
-        "vars": {}
+      "docker_compose_memos": {
+        "vars": {
+          "memos_data_dir": "/var/lib/memos"
+        }
       }
     }
   }

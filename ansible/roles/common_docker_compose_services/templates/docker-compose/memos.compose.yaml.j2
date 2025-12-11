@@ -1,0 +1,12 @@
+services:
+  memos:
+    image: neosmemo/memos:0.25.3
+    container_name: memos
+    ports:
+      - "5230:5230"
+    environment:
+      PUID: "1000"          
+      PGID: "1000" 
+    volumes:
+      - "{{ memos_data_dir }}:/var/opt/memos"
+    restart: unless-stopped

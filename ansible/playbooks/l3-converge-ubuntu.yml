@@ -32,3 +32,6 @@
 
 #### NO GEEKS BREWING CONVERGENCE
 - import_playbook: l3-converge-docker-no-geeks-brewing.yml
+
+#### MEMOS CONVERGENCE
+- import_playbook: l3-converge-docker-memos.yml

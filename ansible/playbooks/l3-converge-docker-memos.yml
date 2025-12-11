@@ -1,0 +1,18 @@
+- name: Memos Docker Services
+  hosts: docker_compose_memos
+  become: yes
+  gather_facts: yes
+  tags: [docker_memos]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: memos
+        compose_source_type: template
+        compose_template_src: "templates/docker-compose/memos.compose.yaml.j2"
+        compose_paths:
+          - path: "{{ memos_data_dir }}"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
