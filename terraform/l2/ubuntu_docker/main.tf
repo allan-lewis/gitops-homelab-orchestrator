@@ -1,10 +1,10 @@
 locals {
   # Path to this persona's hosts.json spec
-  hosts_json_path = "${path.module}/../../../infra/os/ubuntu/personas/media-acquisition/spec/hosts.json"
+  hosts_json_path = "${path.module}/../../../infra/os/ubuntu/personas/docker/spec/hosts.json"
 
   # Logical template refs → manifest JSON files for this persona
   template_manifest_map = {
-    "ubuntu/media-acquisition/stable" = "${path.module}/../../../infra/os/ubuntu/spec/vm-template-stable.json"
+    "ubuntu/docker/stable" = "${path.module}/../../../infra/os/ubuntu/spec/vm-template-stable.json"
     # Add canary/etc here later if needed
   }
 }

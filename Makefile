@@ -37,27 +37,27 @@ endif
   l2-arch-devops-destroy \
   l2-arch-tinker-apply \
   l2-arch-tinker-destroy \
-  l2-ubuntu-media-acquisition-apply \
+  l2-ubuntu-docker-apply \
   l2-ubuntu-openvpn-apply \
   l2-ubuntu-openvpn-destroy \
   l2-ubuntu-tinker-apply \
   l2-ubuntu-tinker-destroy \
   l3-arch-devops-inventory \
-  l3-ubuntu-media-acquisition-inventory \
-  l3-ubuntu-openvpn-inventory \
   l3-arch-tinker-inventory \
+  l3-ubuntu-docker-inventory \
   l3-ubuntu-legacy-inventory \
+  l3-ubuntu-openvpn-inventory \
   l3-ubuntu-tinker-inventory \
   l3-arch-devops-converge \
   l3-arch-tinker-converge \
+  l3-ubuntu-docker-converge \
   l3-ubuntu-legacy-converge \
-  l3-ubuntu-media-acquisition-converge \
   l3-ubuntu-openvpn-converge \
   l3-ubuntu-tinker-converge \
   l4-arch-devops-smoke \
   l4-arch-tinker-smoke \
+  l4-ubuntu-docker-smoke \
   l4-ubuntu-legacy-smoke \
-  l4-ubuntu-media-acquisition-smoke \
   l4-ubuntu-openvpn-smoke \
   l4-ubuntu-tinker-smoke
 
@@ -103,13 +103,13 @@ l2-arch-tinker-destroy: ## Plan/Destroy Arch Tinker VM via Terraform (dry-run by
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l2-terraform.sh terraform/l2/arch_tinker destroy'
 
-l2-ubuntu-media-acquisition-apply: ## Plan/Apply Ubuntu Media Acquisition VM via Terraform (plan by default)
+l2-ubuntu-docker-apply: ## Plan/Apply Ubuntu Docker VMs via Terraform (plan by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l2-terraform.sh terraform/l2/ubuntu_media_acquisition apply'
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_docker apply'
 
-l2-ubuntu-media-acquisition-destroy: ## Plan/Destroy Ubuntu Media Acquisition VM via Terraform (dry-run by default)
+l2-ubuntu-docker-destroy: ## Plan/Destroy Ubuntu Docker VMs via Terraform (dry-run by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l2-terraform.sh terraform/l2/ubuntu_media_acquisition destroy'
+	  scripts/l2-terraform.sh terraform/l2/ubuntu_docker destroy'
 
 l2-ubuntu-openvpn-apply: ## Plan/Apply Ubuntu OpenVPN VM via Terraform (plan by default)
 	@$(RUN) bash -lc 'set -euo pipefail; \
@@ -141,9 +141,9 @@ l3-ubuntu-legacy-inventory: ## Render L3 Ansible inventory for Ubuntu Legacy hos
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh ubuntu legacy'
 
-l3-ubuntu-media-acquisition-inventory: ## Render L3 Ansible inventory for Ubuntu Media Acquisition hosts
+l3-ubuntu-docker-inventory: ## Render L3 Ansible inventory for Ubuntu Docker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu media-acquisition'
+	  scripts/l3-inventory.sh ubuntu docker'
 
 l3-ubuntu-openvpn-inventory: ## Render L3 Ansible inventory for Ubuntu OpenVPN hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
@@ -172,9 +172,9 @@ l3-ubuntu-legacy-converge: l3-ubuntu-legacy-inventory ## Converge Ubuntu Tinker 
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu legacy'
 
-l3-ubuntu-media-acquisition-converge: l3-ubuntu-media-acquisition-inventory ## Converge Ubuntu Media Acquisition hosts (L3 via Ansible)
+l3-ubuntu-docker-converge: l3-ubuntu-docker-inventory ## Converge Ubuntu Docker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu media-acquisition'
+	  scripts/l3-converge.sh ubuntu docker'
 
 l3-ubuntu-openvpn-converge: l3-ubuntu-openvpn-inventory ## Converge Ubuntu OpenVPN hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
@@ -198,9 +198,9 @@ l4-ubuntu-legacy-smoke: l3-ubuntu-legacy-inventory ## L4 smoke test for Ubuntu L
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh ubuntu legacy'
 
-l4-ubuntu-media-acquisition-smoke: l3-ubuntu-media-acquisition-inventory ## L4 smoke test for Ubuntu Media Acquisition hosts
+l4-ubuntu-docker-smoke: l3-ubuntu-docker-inventory ## L4 smoke test for Ubuntu Docker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l4-smoke.sh ubuntu media-acquisition'
+	  scripts/l4-smoke.sh ubuntu docker'
 
 l4-ubuntu-openvpn-smoke: l3-ubuntu-openvpn-inventory ## L4 smoke test for Ubuntu OpenVPN hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
