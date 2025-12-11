@@ -83,6 +83,21 @@
   loop_control:
     label: "{{ item.item.dest }}"
 
+- name: Ensure parent directory exists for volumes to be restored
+  ansible.builtin.file:
+    path: "{{ item.src | dirname }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ backup_runner_volumes }}"
+  loop_control:
+    label: "{{ item.src }}"
+    index_var: idx
+  when:
+    # Remote backup exists...
+    - backup_remote_checks.results[idx].rc | int == 0
+    # ...and local src does NOT exist yet
+    - not backup_local_stats.results[idx].stat.exists
+
 - name: Restore backup_runner volumes from remote backup
   ansible.builtin.command:
     argv:

@@ -1,18 +1,5 @@
 {
   "hosts": {
-    "carrie": {
-      "ip": "192.168.86.228",
-      "ssh_user": "lab",
-      "tags": ["ubuntu", "legacy"],
-
-      "terraform": {},
-
-      "ansible": {
-        "group_memberships": ["ubuntu_legacy"],
-
-        "vars": {}
-      }
-    },
     "flagg": {
       "ip": "192.168.86.205",
       "ssh_user": "lab",

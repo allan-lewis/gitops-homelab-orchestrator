@@ -1,0 +1,13 @@
+---
+- name: IT Tools Docker Services
+  hosts: docker_compose_it_tools
+  become: yes
+  gather_facts: yes
+  tags: [docker_it_tools]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: tools
+        compose_source_type: file
+        compose_file_src: files/docker-compose/it-tools.compose.yaml

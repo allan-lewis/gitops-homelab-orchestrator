@@ -26,3 +26,9 @@
 
 #### MEDIA ACQUISITION CONVERGENCE
 - import_playbook: l3-converge-docker-media-acquisition.yml
+
+#### IT TOOLS CONVERGENCE
+- import_playbook: l3-converge-docker-it-tools.yml
+
+#### NO GEEKS BREWING CONVERGENCE
+- import_playbook: l3-converge-docker-no-geeks-brewing.yml

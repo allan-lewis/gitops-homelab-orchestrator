@@ -1,0 +1,10 @@
+services:
+  no-geeks-brewing-go:
+    image: allanelewis/ngb-go:latest
+    container_name: no-geeks-brewing-go
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
