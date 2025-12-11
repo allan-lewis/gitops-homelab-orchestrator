@@ -43,3 +43,12 @@
 #### TWINGATE CONVERGENCE
 - import_playbook: l3-converge-docker-twingate.yml
 
+#### PI-HOLE CONVERGENCE
+#- import_playbook: l3-converge-docker-pihole.yml
+
+#### GATUS CONVERGENCE
+#- import_playbook: l3-converge-docker-gatus.yml
+
+#### TRAEFIK CONVERGENCE
+- import_playbook: l3-converge-docker-traefik.yml
+
