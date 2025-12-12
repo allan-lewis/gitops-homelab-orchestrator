@@ -44,7 +44,6 @@ endif
   l2-ubuntu-tinker-destroy \
   l3-arch-devops-inventory \
   l3-arch-tinker-inventory \
-  l3-ubuntu-core-inventory \
   l3-ubuntu-docker-inventory \
   l3-ubuntu-legacy-inventory \
   l3-ubuntu-openvpn-inventory \
@@ -144,10 +143,6 @@ l3-ubuntu-legacy-inventory: ## Render L3 Ansible inventory for Ubuntu Legacy hos
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh ubuntu legacy'
 
-l3-ubuntu-core-inventory: ## Render L3 Ansible inventory for Ubuntu core hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu core'
-
 l3-ubuntu-docker-inventory: ## Render L3 Ansible inventory for Ubuntu Docker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-inventory.sh ubuntu docker'
@@ -179,9 +174,9 @@ l3-ubuntu-legacy-converge: l3-ubuntu-legacy-inventory ## Converge Ubuntu Tinker 
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu legacy'
 
-l3-ubuntu-core-converge: l3-ubuntu-core-inventory ## Converge Ubuntu core hosts (L3 via Ansible)
+l3-ubuntu-core-converge: ## Converge Ubuntu core hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu core'
+	  scripts/l3-converge.sh ubuntu ubuntu_core'
 
 l3-ubuntu-docker-converge: l3-ubuntu-docker-inventory ## Converge Ubuntu Docker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
