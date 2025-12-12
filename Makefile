@@ -178,9 +178,9 @@ l3-ubuntu-core-converge: ## Converge Ubuntu core hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu ubuntu_core'
 
-l3-ubuntu-docker-converge: l3-ubuntu-docker-inventory ## Converge Ubuntu Docker hosts (L3 via Ansible)
+l3-ubuntu-docker-converge: ## Converge Ubuntu Docker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu docker'
+	  scripts/l3-converge.sh ubuntu ubuntu_misc'
 
 l3-ubuntu-openvpn-converge: l3-ubuntu-openvpn-inventory ## Converge Ubuntu OpenVPN hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \

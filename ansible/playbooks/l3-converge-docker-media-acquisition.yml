@@ -1,5 +1,5 @@
 - name: Media Acquistion Docker Services
-  hosts: docker_compose_media_acquisition
+  hosts: "{{ converge_group }}:&docker_compose_media_acquisition"
   become: yes
   gather_facts: yes
   tags: [docker_media_acquisition]

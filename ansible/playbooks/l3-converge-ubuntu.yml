@@ -2,6 +2,14 @@
 - import_playbook: l3-converge-ubuntu-all.yml
 - import_playbook: l3-converge-docker-compose.yml
 - import_playbook: l3-converge-docker-monitoring.yml
+- import_playbook: l3-converge-docker-cloudflare.yml
+- import_playbook: l3-converge-docker-twingate.yml
+# - import_playbook: l3-converge-docker-gatus.yml
+# - import_playbook: l3-converge-docker-pihole.yml
+- import_playbook: l3-converge-docker-traefik.yml
+- import_playbook: l3-converge-docker-it-tools.yml
+- import_playbook: l3-converge-docker-no-geeks-brewing.yml
+- import_playbook: l3-converge-docker-memos.yml
+- import_playbook: l3-converge-docker-media-acquisition.yml
 - import_playbook: l3-converge-ubuntu-openvpn.yml
-
 

@@ -1,5 +1,5 @@
 - name: Traefik Docker Services
-  hosts: docker_compose_traefik
+  hosts: "{{ converge_group }}:&docker_compose_traefik"
   become: yes
   gather_facts: yes
   tags: [docker_traefik]

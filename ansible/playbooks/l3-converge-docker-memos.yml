@@ -1,5 +1,5 @@
 - name: Memos Docker Services
-  hosts: docker_compose_memos
+  hosts: "{{ converge_group }}:&docker_compose_memos"
   become: yes
   gather_facts: yes
   tags: [docker_memos]

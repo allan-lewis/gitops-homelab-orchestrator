@@ -1,5 +1,5 @@
 - name: Twingate Docker Services
-  hosts: docker_compose_twingate
+  hosts: "{{ converge_group }}:&docker_compose_twingate"
   become: yes
   gather_facts: yes
   tags: [docker_twingate]

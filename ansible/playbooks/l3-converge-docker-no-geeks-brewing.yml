@@ -1,6 +1,6 @@
 ---
 - name: No Geeks Brewing Docker Services
-  hosts: docker_compose_ngb
+  hosts: "{{ converge_group }}:&docker_compose_ngb"
   become: yes
   gather_facts: yes
   tags: [docker_ngb]

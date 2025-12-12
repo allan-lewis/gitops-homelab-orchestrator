@@ -1,5 +1,5 @@
 - name: Cloudflare Docker Services
-  hosts: docker_compose_cloudflare
+  hosts: "{{ converge_group }}:&docker_compose_cloudflare"
   become: yes
   gather_facts: yes
   tags: [docker_cloudflare]

@@ -5,11 +5,12 @@ all:
       ansible_host: 192.168.86.124
     carrie:
       ansible_host: 192.168.86.228
+      gatus_slug: "(Ubuntu Docker/Misc)"
     derry:
       ansible_host: 192.168.86.210
     flagg:
       ansible_host: 192.168.86.205
-      gatus_slug: "(Ubuntu Core)"
+      gatus_slug: "(Ubuntu Docker/Core)"
     gilead:
       ansible_host: 100.95.108.6
     misery:
@@ -25,30 +26,53 @@ all:
 
   children:
     fully_managed:
+      children:
+        ubuntu:
+          children:
+            docker_compose:
+              children:
+                docker_compose_monitoring:
+                  children:
+                    docker_compose_it_tools:
+                      hosts:
+                        carrie:
+                    docker_compose_media_acquisition:
+                      hosts:
+                        patricia:
+                    docker_compose_memos:
+                      hosts:
+                        carrie:
+                    docker_compose_ngb:
+                      hosts:
+                        carrie:
+            ubuntu_misc:
+              hosts:
+                carrie:
+                patricia:
+            ubuntu_openvpn:
     semi_managed:
       children:
         ubuntu:
           children:
             docker_compose:
               children:
-                docker_compose_cloudflare:
-                  hosts:
-                    flagg:
-                docker_compose_gatus:
-                  hosts:
-                    flagg:
                 docker_compose_monitoring:
-                  hosts:
-                    flagg:
-                docker_compose_pihole:
-                  hosts:
-                    flagg:
-                docker_compose_traefik:
-                  hosts:
-                    flagg:
-                docker_compose_twingate:
-                  hosts:
-                    flagg:
+                  children:
+                    docker_compose_cloudflare:
+                      hosts:
+                        flagg:
+                    docker_compose_gatus:
+                      hosts:
+                        flagg:
+                    docker_compose_pihole:
+                      hosts:
+                        flagg:
+                    docker_compose_traefik:
+                      hosts:
+                        flagg:
+                    docker_compose_twingate:
+                      hosts:
+                        flagg:
             ubuntu_core:
               hosts:
                 flagg:
