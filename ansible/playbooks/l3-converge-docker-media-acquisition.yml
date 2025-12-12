@@ -46,3 +46,4 @@
             nfs_server: "{{ media_acquisition_nfs_server }}"
             nfs_path: "/mnt/pool1/media-acquisition"
             nfs_opts: "rw"
+

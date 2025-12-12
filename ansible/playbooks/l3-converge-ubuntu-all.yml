@@ -10,55 +10,46 @@
       ansible.builtin.include_role:
         name: ubuntu_base
       when: is_base_enabled
-      tags: ["base"]
 
     - name: Run ubuntu_hardening role
       ansible.builtin.include_role:
         name: ubuntu_hardening
       when: is_harden_enabled
-      tags: ["harden"]
 
     - name: Run ubuntu_shell role
       ansible.builtin.include_role:
         name: ubuntu_shell
       when: is_shell_enabled
-      tags: ["shell"]
 
       ## BACKUP: order for these 3 matters - install SSH keys, restore first, then schedule backups
     - name: Run common_install_ssh_keys role
       ansible.builtin.include_role:
         name: common_install_ssh_keys
       when: is_ssh_keys_enabled
-      tags: ["ssh_keys"]
 
     - name: Run common_backup_restore role
       ansible.builtin.include_role:
         name: common_backup_restore
       when: is_restore_enabled
-      tags: ["restore"]
 
     - name: Run common_backup_runner role
       ansible.builtin.include_role:
         name: common_backup_runner
       when: is_backup_enabled
-      tags: ["backup"]
       #### BACKUP
 
     - name: Run common_s3_local_mirror role
       ansible.builtin.include_role:
         name: common_s3_local_mirror
       when: is_s3_mirror_enabled
-      tags: ["s3_mirror"]
 
     - name: Run common_postgres_db_backup role
       ansible.builtin.include_role:
         name: common_postgres_db_backup
       when: is_db_backup_enabled
-      tags: ["db_backup"]
 
     - name: Run common_node_exporter role
       ansible.builtin.include_role:
         name: common_node_exporter
       when: is_node_exporter_enabled
-      tags: ["node_exporter"]
 

@@ -13,20 +13,6 @@
         "node": "polaris",
         "ipconfig": "ip=192.168.86.228/24,gw=192.168.86.1"
       },
-
-      "ansible": {
-        "group_memberships": [
-        ],
-
-        "vars": {
-          "backup_runner_volumes": [
-            { 
-              "src": "{{ memos_data_dir }}",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/memos" 
-            }
-          ]
-        }
-      }
     },
     "patricia": {
       "ip": "192.168.86.224",
@@ -41,65 +27,7 @@
         "node": "polaris",
         "ipconfig": "ip=192.168.86.224/24,gw=192.168.86.223"
       },
-
-      "ansible": {
-        "group_memberships": ["docker_compose_media_acquisition", "docker_compose_monitoring"],
-
-        "vars": {
-          "is_media_acquisition_enabled": true,
-          "media_acquisition_nfs_server": "{{ remote_nas_server }}",
-          "backup_runner_cron_minute": "50",
-          "backup_runner_volumes": [
-            { 
-              "src": "/etc/lidarr",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/lidarr/config" 
-            },
-            { 
-              "src": "/etc/prowlarr",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/prowlarr/config" 
-            },
-            { 
-              "src": "/etc/radarr",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/radarr/config" 
-            },
-            { 
-              "src": "/etc/sonarr",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/sonarr/config" 
-            },
-            { 
-              "src": "/etc/transmission",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/config" 
-            },
-            { 
-              "src": "/var/lib/transmission/watch",
-              "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/watch" 
-            }
-          ]
-        }
-      }
-    }
-  },
-
-  "ansible": {
-    "all": {
-      "vars": {
-        "remote_nas_server": "192.168.86.106",
-        "is_backup_enabled": true,
-        "backup_runner_cron_hour": "*",
-        "backup_runner_user": "allan",
-        "is_restore_enabled": true,
-        "backup_restore_owner": "lab",
-        "backup_restore_group": "lab",
-        "is_ssh_keys_enabled": true,
-        "backup_runner_remote_host": "{{ remote_nas_server }}",
-      }
-    },
-
-    "groups": {
-      "docker_compose_memos": {
-        "vars": {
-        }
-      }
     }
   }
 }
+

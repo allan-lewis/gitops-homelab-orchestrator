@@ -1,0 +1,7 @@
+"backup_runner_volumes": [
+  { 
+    "src": "{{ memos_data_dir }}",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/memos" 
+  }
+]
+

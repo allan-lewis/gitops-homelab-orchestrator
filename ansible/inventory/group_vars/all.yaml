@@ -1,5 +1,7 @@
 ---
 ## HOMELAB-WIDE VARIABLES
+default_remote_nas_ip: "{{ hostvars['procyon'].ansible_host }}"
+
 gitops_user: "lab"
 gitops_uid: 1000
 gitops_gid: 1000

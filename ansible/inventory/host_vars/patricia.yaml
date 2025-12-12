@@ -1,0 +1,28 @@
+"backup_runner_cron_minute": 50
+"backup_runner_volumes": [
+  { 
+    "src": "/etc/lidarr",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/lidarr/config" 
+  },
+  { 
+    "src": "/etc/prowlarr",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/prowlarr/config" 
+  },
+  { 
+    "src": "/etc/radarr",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/radarr/config" 
+  },
+  { 
+    "src": "/etc/sonarr",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/sonarr/config" 
+  },
+  { 
+    "src": "/etc/transmission",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/config" 
+  },
+  { 
+    "src": "/var/lib/transmission/watch",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/transmission/watch" 
+  }
+]
+media_acquisition_nfs_server: "{{ default_remote_nas_ip }}"
