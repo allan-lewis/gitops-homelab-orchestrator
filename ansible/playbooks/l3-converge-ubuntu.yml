@@ -1,7 +1,7 @@
 ---
 #### GENERAL OS CONVERGENCE
 - name: Ubuntu OS Convergence
-  hosts: all
+  hosts: ubuntu
   gather_facts: true
   become: true
 

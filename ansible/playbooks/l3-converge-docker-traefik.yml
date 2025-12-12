@@ -15,7 +15,7 @@
           CLOUDFLARE_API_KEY: "{{ lookup('env', 'TRAEFIK_CF_API_KEY') }}"
         compose_extra_templates:
           - src: "templates/traefik/traefik.config.yaml.j2"
-            dest: "/etc/traefik/traefik2.yaml"
+            dest: "/etc/traefik/traefik.yaml"
             uid: 1000
             gid: 1000
         compose_paths:

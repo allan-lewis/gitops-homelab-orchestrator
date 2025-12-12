@@ -18,10 +18,11 @@ set -euo pipefail
 OS="${1:?Usage: $0 <os> <persona>}"
 PERSONA="${2:?Usage: $0 <os> <persona>}"
 
-INVENTORY="artifacts/l3-inventory/${OS}/${PERSONA}/hosts.yml"
+# INVENTORY="artifacts/l3-inventory/${OS}/${PERSONA}/hosts.yml"
+INVENTORY="ansible/inventory/"
 PLAYBOOK="ansible/playbooks/l3-converge-${OS}.yml"
 
-if [[ ! -f "${INVENTORY}" ]]; then
+if [[ ! -d "${INVENTORY}" ]]; then
   echo "Inventory not found at: ${INVENTORY}" >&2
   echo "Did you run l3-${OS}-${PERSONA}-inventory first?" >&2
   exit 1

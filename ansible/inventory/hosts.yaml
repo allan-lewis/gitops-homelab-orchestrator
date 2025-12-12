@@ -1,0 +1,60 @@
+---
+all:
+  hosts:
+    arcturus:
+      ansible_host: 192.168.86.124
+    carrie:
+      ansible_host: 192.168.86.228
+    derry:
+      ansible_host: 192.168.86.210
+    flagg:
+      ansible_host: 192.168.86.205
+      gatus_slug: "(Ubuntu Core)"
+    gilead:
+      ansible_host: 100.95.108.6
+    misery:
+      ansible_host: 192.168.86.227
+    patricia:
+      ansible_host: 192.168.86.224
+    polaris:
+      ansible_host: 192.168.86.101
+    procyon:
+      ansible_host: 192.168.86.106
+    sirius:
+      ansible_host: 192.168.86.105 
+
+  children:
+    fully_managed:
+    semi_managed:
+      children:
+        ubuntu:
+          children:
+            docker_compose:
+              children:
+                docker_compose_cloudflare:
+                  hosts:
+                    flagg:
+                docker_compose_gatus:
+                  hosts:
+                    flagg:
+                docker_compose_monitoring:
+                  hosts:
+                    flagg:
+                docker_compose_pihole:
+                  hosts:
+                    flagg:
+                docker_compose_traefik:
+                  hosts:
+                    flagg:
+                docker_compose_twingate:
+                  hosts:
+                    flagg:
+            ubuntu_core:
+              hosts:
+                flagg:
+    unmanaged:
+      hosts:
+        gilead:
+        polaris:
+        sirius:
+

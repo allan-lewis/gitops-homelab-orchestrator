@@ -1,7 +1,7 @@
 ---
 #### GENERAL OS CONVERGENCE
 - name: Arch OS Convergence
-  hosts: all
+  hosts: arch
   gather_facts: true
   become: true
 
