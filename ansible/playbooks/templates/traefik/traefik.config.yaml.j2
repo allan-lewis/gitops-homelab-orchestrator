@@ -1,0 +1,47 @@
+http:    
+{% if traefik_services is defined %}
+  routers:
+{% for service in traefik_services %}
+    router-{{ service.name }}-http:
+      entryPoints:
+        - web
+      rule: Host(`{{ service.host }}`)
+      middlewares:
+        - redirect-to-https
+        # - authentik
+      service: service-{{ service.name }}
+    router-{{ service.name }}-https:
+      entryPoints:
+        - websecure
+      service: service-{{ service.name }}
+      rule: Host(`{{ service.host }}`)
+{% if service.authentik | default(false) %}
+      middlewares:
+        - authentik
+{% endif %}
+      tls:
+        certresolver: myresolver
+{% endfor %}
+
+  services:
+{% for service in traefik_services %}
+    service-{{ service.name }}:
+      loadBalancer:
+        servers:
+          - url: {{ service.url }}
+            scheme: {{ service.scheme | default('http') }} 
+        passHostHeader: true
+{% endfor %}
+{% endif %}
+
+  middlewares:
+
+    redirect-to-https:
+      redirectscheme:
+        scheme: https
+        permanent: true
+    authentik:
+      forwardauth:
+        address: http://authentik-proxy:9000/outpost.goauthentik.io/auth/traefik
+        trustForwardHeader: true
+        authResponseHeaders: X-authentik-username,X-authentik-groups,X-authentik-email,X-authentik-name,X-authentik-uid,X-authentik-jwt,X-authentik-meta-jwks,X-authentik-meta-outpost,X-authentik-meta-provider,X-authentik-meta-app,X-authentik-meta-version,authorization

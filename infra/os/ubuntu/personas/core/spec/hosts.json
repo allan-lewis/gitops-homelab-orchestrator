@@ -43,6 +43,177 @@
     },
 
     "groups": {
+      "docker_compose_traefik": {
+        "vars": {
+          "traefik_hosts": {
+            "arcturus": {
+              "ansible_host": "192.168.86.124"
+            },
+            "carrie": {
+              "ansible_host": "192.168.86.228"
+            },
+            "derry": {
+              "ansible_host": "192.168.86.210"
+            },
+            "gilead": {
+              "ansible_host": "100.95.108.6"
+            },
+            "misery": {
+              "ansible_host": "192.168.86.227"
+            },
+            "patricia": {
+              "ansible_host": "192.168.86.224"
+            },
+            "polaris": {
+              "ansible_host": "192.168.86.101"
+            },
+            "procyon": {
+              "ansible_host": "192.168.86.106"
+            },
+            "sirius": {
+              "ansible_host": "192.168.86.105"
+            }
+          },
+          "traefik_services": [
+            {
+              "name": "derry",
+              "host": "derry.hosts.allanshomelab.com",
+              "url": "http://{{traefik_hosts['derry'].ansible_host}}:8000"
+            },
+            {
+              "name": "gilead",
+              "host": "gilead.hosts.allanshomelab.com",
+              "url": "http://{{traefik_hosts['gilead'].ansible_host}}:80"
+            },
+            {
+              "name": "procyon",
+              "host": "procyon.hosts.allanshomelab.com",
+              "url": "http://{{traefik_hosts['procyon'].ansible_host}}:80"
+            },
+            {
+              "name": "whoami",
+              "host": "whoami.docker.allanshomelab.com",
+              "url": "http://{{hostvars['flagg'].ansible_host}}:8180"
+            },
+            {
+              "name": "traefik-dashboard",
+              "host": "traefik.docker.allanshomelab.com",
+              "url": "http://{{ hostvars['flagg'].ansible_host}}:8088"
+            },
+            {
+              "name": "pihole",
+              "host": "dns.docker.allanshomelab.com",
+              "url": "http://{{ hostvars['flagg'].ansible_host }}:30080"
+            },
+            {
+              "name": "gatus",
+              "host": "gatus.docker.allanshomelab.com",
+              "url": "http://{{ hostvars['flagg'].ansible_host }}:8080"
+            },
+            {
+              "name": "plex",
+              "host": "plex.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['misery'].ansible_host }}:32400"
+            },
+            {
+              "name": "prowlarr",
+              "host": "prowlarr.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['patricia'].ansible_host }}:9696"
+            },
+            {
+              "name": "lidarr",
+              "host": "lidarr.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['patricia'].ansible_host }}:8686"
+            },
+            {
+              "name": "radarr",
+              "host": "radarr.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['patricia'].ansible_host }}:7878"
+            },
+            {
+              "name": "sonarr",
+              "host": "sonarr.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['patricia'].ansible_host }}:8989"
+            },
+            {
+              "name": "jellyfin",
+              "host": "jellyfin.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['misery'].ansible_host }}:8096"
+            },
+            {
+              "name": "transmission",
+              "host": "transmission.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['patricia'].ansible_host }}:9091"
+            },
+            {
+              "name": "sirius",
+              "host": "sirius.hosts.allanshomelab.com",
+              "url": "https://{{ traefik_hosts['sirius'].ansible_host }}:8006",
+              "scheme": "https"
+            },
+            {
+              "name": "polaris",
+              "host": "polaris.hosts.allanshomelab.com",
+              "url": "https://{{ traefik_hosts['polaris'].ansible_host }}:8006",
+              "scheme": "https"
+            },
+            {
+              "name": "immich",
+              "host": "photos.allanandvaia.com",
+              "url": "http://{{ traefik_hosts['misery'].ansible_host }}:2283",
+              "scheme": "http"
+            },
+            {
+              "name": "tautulli",
+              "host": "tautulli.media.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['misery'].ansible_host }}:8181",
+              "scheme": "http"
+            },
+            {
+              "name": "homeassistant",
+              "host": "home.allanandvaia.com",
+              "url": "http://{{ traefik_hosts['arcturus'].ansible_host }}:8123",
+              "scheme": "http"
+            },
+            {
+              "name": "kvm1",
+              "host": "one.kvm.allanshomelab.com",
+              "url": "http://192.168.86.247",
+              "scheme": "http"
+            },
+            {
+              "name": "kvm2",
+              "host": "two.kvm.allanshomelab.com",
+              "url": "http://192.168.86.248",
+              "scheme": "http"
+            },
+            {
+              "name": "tools",
+              "host": "tools.docker.allanshomelab.com",
+              "url": "http://{{ traefik_hosts['carrie'].ansible_host }}:8386",
+              "scheme": "http"
+            },
+            {
+              "name": "ngb1",
+              "host": "nogeeksbrewing.com",
+              "url": "http://{{ traefik_hosts['carrie'].ansible_host }}:8080",
+              "scheme": "http"
+            },
+            {
+              "name": "ngb2",
+              "host": "www.nogeeksbrewing.com",
+              "url": "http://{{ traefik_hosts['carrie'].ansible_host }}:8080",
+              "scheme": "http"
+            },
+            {
+              "name": "memos",
+              "host": "memos.allanandvaia.com",
+              "url": "http://{{ traefik_hosts['carrie'].ansible_host }}:5230",
+              "scheme": "http"
+            }
+          ]
+        }
+      }
     }
   }
 }
