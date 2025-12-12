@@ -1,78 +1,64 @@
 ---
 #### GENERAL OS CONVERGENCE
 - name: Ubuntu OS Convergence
-  hosts: "{{ converge_group }}"
+  hosts: "{{ converge_group }}:&ubuntu"
   gather_facts: true
   become: true
 
   tasks:
-    ## OS-SPECIFIC; DEFAULT ON
     - name: Run ubuntu_base role 
       ansible.builtin.include_role:
         name: ubuntu_base
-      when: is_base_enabled | default(true)
+      when: is_base_enabled
       tags: ["base"]
 
     - name: Run ubuntu_hardening role
       ansible.builtin.include_role:
         name: ubuntu_hardening
-      when: is_harden_enabled | default(true)
+      when: is_harden_enabled
       tags: ["harden"]
 
     - name: Run ubuntu_shell role
       ansible.builtin.include_role:
         name: ubuntu_shell
-      when: is_shell_enabled | default(true)
+      when: is_shell_enabled
       tags: ["shell"]
 
-    ## OS-SPECIFIC; DEFAULT OFF
-    - name: Run ubuntu_docker_compose role
-      ansible.builtin.include_role:
-        name: ubuntu_docker_compose
-      when: is_docker_enabled | default(false)
-      tags: ["docker"]
-
-    - name: Run ubuntu_openvpn role
-      ansible.builtin.include_role:
-        name: ubuntu_openvpn
-      when: is_openvpn_enabled | default(false)
-      tags: ["openvpn"]
-
-    ## CROSS-OS; DEFAULT OFF
-    #### order for these 3 matters - install SSH keys, restore first, then schedule backups
-    - name: Run common_install_ssh_keys role (conditional)
+      ## BACKUP: order for these 3 matters - install SSH keys, restore first, then schedule backups
+    - name: Run common_install_ssh_keys role
       ansible.builtin.include_role:
         name: common_install_ssh_keys
-      when: is_ssh_keys_enabled | default(false)
+      when: is_ssh_keys_enabled
       tags: ["ssh_keys"]
 
-    - name: Run common_backup_restore role (conditional)
+    - name: Run common_backup_restore role
       ansible.builtin.include_role:
         name: common_backup_restore
-      when: is_restore_enabled | default(false)
+      when: is_restore_enabled
       tags: ["restore"]
 
-    - name: Run common_backup_runner role (conditional)
+    - name: Run common_backup_runner role
       ansible.builtin.include_role:
         name: common_backup_runner
-      when: is_backup_enabled | default(false)
+      when: is_backup_enabled
       tags: ["backup"]
+      #### BACKUP
 
-    - name: Run common_s3_local_mirror role (conditional)
+    - name: Run common_s3_local_mirror role
       ansible.builtin.include_role:
         name: common_s3_local_mirror
-      when: is_s3_mirror_enabled | default(false)
+      when: is_s3_mirror_enabled
       tags: ["s3_mirror"]
 
-    - name: Run common_postgres_db_backup role (conditional)
+    - name: Run common_postgres_db_backup role
       ansible.builtin.include_role:
         name: common_postgres_db_backup
-      when: is_db_backup_enabled | default(false)
+      when: is_db_backup_enabled
       tags: ["db_backup"]
 
-    - name: Run common_node_exporter role (conditional)
+    - name: Run common_node_exporter role
       ansible.builtin.include_role:
         name: common_node_exporter
-      when: is_node_exporter_enabled | default(false)
+      when: is_node_exporter_enabled
       tags: ["node_exporter"]
 

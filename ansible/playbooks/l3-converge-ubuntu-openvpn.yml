@@ -1,0 +1,9 @@
+- name: Setup OpenVPN Gateway
+  hosts: "{{ converge_group }}:&ubuntu_openvpn"
+  become: yes
+  gather_facts: yes
+  tags: [docker_openvpn]
+
+  roles:
+    - role: ubuntu_openvpn
+

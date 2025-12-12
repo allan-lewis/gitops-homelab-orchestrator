@@ -1,0 +1,9 @@
+- name: Install Docker Compose
+  hosts: "{{ converge_group }}:&docker_compose"
+  become: yes
+  gather_facts: yes
+  tags: [docker]
+
+  roles:
+    - role: ubuntu_docker_compose
+

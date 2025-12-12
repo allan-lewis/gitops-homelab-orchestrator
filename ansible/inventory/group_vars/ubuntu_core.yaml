@@ -1,9 +1,6 @@
 ---
-"is_backup_enabled": false
-"is_docker_enabled": false
-"is_ssh_keys_enabled": false
-"ssh_keys_install_private_for_ansible_user": true
-"ssh_keys_install_public_for_ansible_user": true
-"ssh_keys_install_private_for_root": true
-"ssh_keys_install_public_for_root": true
+# ssh_keys_install_private_for_ansible_user: true
+# ssh_keys_install_public_for_ansible_user: true
+# ssh_keys_install_private_for_root: true
+# ssh_keys_install_public_for_root: true
 
