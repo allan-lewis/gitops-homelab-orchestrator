@@ -4,17 +4,31 @@
   gather_facts: yes
   tags: [docker_pihole]
 
-  roles:
-    - role: pihole_pre
-    - role: common_docker_compose_services
-      vars:    
-        compose_app_name: pihole
-        compose_source_type: template
+  pre_tasks:
+    - name: Pi-hole pre tasks
+      import_tasks: tasks/pihole-pre.yaml
+      tags: [docker_pihole]
+
+  tasks:
+    - name: Run common docker compose role for Pi-hole
+      ansible.builtin.include_role:
+        name: common_docker_compose_services
+      vars:
+        compose_app_name: "pihole"
+        compose_source_type: "template"
         compose_template_src: "templates/docker-compose/pihole.compose.yaml.j2"
         compose_paths:
           - path: "/var/lib/pihole"
             create: true
             mode: "0755"
-    - role: pihole_post
-    - role: pihole_dns
+      tags: [docker_pihole]
+
+    - name: Pi-hole DNS configuration
+      import_tasks: tasks/pihole-dns.yaml
+      tags: [docker_pihole]
+
+  post_tasks:
+    - name: Pi-hole post tasks
+      import_tasks: tasks/pihole-post.yaml
+      tags: [docker_pihole]
 
