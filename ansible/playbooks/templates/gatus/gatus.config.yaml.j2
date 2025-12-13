@@ -1,0 +1,44 @@
+storage:
+  type: sqlite
+  path: /data/data.db
+
+metrics: true
+
+endpoints:
+{% for host in groups['all']| default([]) %}
+{% if hostvars[host].ansible_host is defined %}
+  - name: "{{ host  | capitalize }} {{ hostvars[host].gatus_slug | default('') }}"
+    group: "Hosts"
+    enabled: {{ hostvars[host].gatus_enabled | default(true) }}
+    url: "icmp://{{ hostvars[host].ansible_host }}"
+    conditions:
+      - "[CONNECTED] == true"
+{% if hostvars[host].backup_runner_healthchecks_status is defined %}
+  - name: "{{ host  | capitalize }}"
+    group: "Healthchecks"
+    enabled: {{ hostvars[host].gatus_enabled | default(true) }}
+    url: "{{ hostvars[host].backup_runner_healthchecks_status }}"
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*up*)"
+{% endif %}
+{% endif %}
+{% endfor %}
+{% for endpoint in gatus_https_endpoints | default([]) %}
+  - name: {{ endpoint.name }}
+    group: "{{ endpoint.group }}"
+    url: "{{ endpoint.url }}"
+    conditions:
+      - "[STATUS] == {{ endpoint.status | default(200) }}"
+{% if endpoint.check_cert | default(true) == true  %}
+      - "[CERTIFICATE_EXPIRATION] > 168h"
+{% endif %}
+      - "[BODY] == pat({{ endpoint.pattern | default('*') }})"
+{% endfor %}
+{% for endpoint in gatus_tcp_endpoints | default([]) %}
+  - name: "{{ endpoint.name }} ({{ endpoint.ip }})"
+    group: "{{ endpoint.group }}"
+    url: "{{ endpoint.url }}"
+    conditions:
+      - "[CONNECTED] == true"
+{% endfor %}

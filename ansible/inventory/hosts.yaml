@@ -1,32 +1,69 @@
 ---
 all:
   hosts:
+    antares:
+      ansible_host: 192.168.86.167
+      gatus_slug: "(Retro Gaming)"
     arcturus:
       ansible_host: 192.168.86.124
+      gatus_slug: "(Home Automation)"
     blaine:
       ansible_host: 192.168.86.223
       gatus_slug: "(OpenVPN Gateway)"
     carrie:
       ansible_host: 192.168.86.228
       gatus_slug: "(Ubuntu Docker/Misc)"
+    christine:
+      ansible_host: 192.168.86.212
+      gatus_slug: "(Windows 11)"
+    cujo:
+      ansible_host: 192.168.86.217
+      gatus_slug: "(Arch Sandbox, BTW)"
     derry:
       ansible_host: 192.168.86.210
+      gatus_slug: "(Local Backup)"
+    eddie:
+      ansible_host: 192.168.86.152
+      gatus_slug: "(K8s Worker)"
     flagg:
       ansible_host: 192.168.86.205
       gatus_slug: "(Ubuntu Docker/Core)"
+    gan:
+      ansible_host: 192.168.86.211
+      gatus_slug: "(MacOS)"
     gilead:
       ansible_host: 100.95.108.6
+      gatus_slug: "(Remote Backup)"
+    jake:
+      ansible_host: 192.168.86.153
+      gatus_slug: "(K8s Worker)"
+    langolier:
+      ansible_host: 192.168.86.216
+      gatus_slug: "(Arch DevOps, BTW)"
     misery:
       ansible_host: 192.168.86.227
+      gatus_slug: "(Ubuntu Docker/Media)"
     patricia:
       ansible_host: 192.168.86.224
       gatus_slug: "(Ubuntu Docker/Media)"
     polaris:
       ansible_host: 192.168.86.101
+      gatus_slug: "(Proxmox Hypervisor)"
     procyon:
       ansible_host: 192.168.86.106
+      gatus_slug: "(NAS)"
+    roland:
+      ansible_host: 192.168.86.151
+      gatus_slug: "(K8s Control Plane)"
+    sheemie:
+      ansible_host: 192.168.86.229
+      gatus_slug: "(GitHub Runner)"
     sirius:
       ansible_host: 192.168.86.105
+      gatus_slug: "(Proxmox Hypervisor)"
+    susannah:
+      ansible_host: 192.168.86.154
+      gatus_slug: "(K8s Worker)"
     todash:
       ansible_host: 192.168.86.218
       gatus_slug: "(Ubuntu Docker/Sandbox)"

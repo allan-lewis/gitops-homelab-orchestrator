@@ -1,0 +1,20 @@
+- name: Pi-Hole Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_pihole"
+  become: yes
+  gather_facts: yes
+  tags: [docker_pihole]
+
+  roles:
+    - role: pihole_pre
+    - role: common_docker_compose_services
+      vars:    
+        compose_app_name: pihole
+        compose_source_type: template
+        compose_template_src: "templates/docker-compose/pihole.compose.yaml.j2"
+        compose_paths:
+          - path: "/var/lib/pihole"
+            create: true
+            mode: "0755"
+    - role: pihole_post
+    - role: pihole_dns
+
