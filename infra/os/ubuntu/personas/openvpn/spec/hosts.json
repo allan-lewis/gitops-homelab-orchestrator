@@ -12,32 +12,6 @@
         "template_ref": "ubuntu/openvpn/stable",
         "node": "polaris",
         "ipconfig": "ip=192.168.86.223/24,gw=192.168.86.1"
-      },
-
-      "ansible": {
-        "group_memberships": ["ubuntu_openvpn"],
-
-        "vars": {
-          "is_openvpn_enabled": true,
-          "vpn_lan_net": "192.168.86.0/24",
-          "vpn_dns_ip": "192.168.86.205"
-        }
-      }
-    }
-  },
-
-  "ansible": {
-    "all": {
-      "vars": {
-        "ansible_python_interpreter": "/usr/bin/python3"
-      }
-    },
-
-    "groups": {
-      "ubuntu_openvpn": {
-        "vars": { 
-          "is_node_exporter_enabled": true
-        }
       }
     }
   }

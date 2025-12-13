@@ -3,6 +3,9 @@ all:
   hosts:
     arcturus:
       ansible_host: 192.168.86.124
+    blaine:
+      ansible_host: 192.168.86.223
+      gatus_slug: "(OpenVPN Gateway)"
     carrie:
       ansible_host: 192.168.86.228
       gatus_slug: "(Ubuntu Docker/Misc)"
@@ -51,6 +54,8 @@ all:
                 carrie:
                 patricia:
             ubuntu_openvpn:
+              hosts:
+                blaine:
     semi_managed:
       children:
         ubuntu:

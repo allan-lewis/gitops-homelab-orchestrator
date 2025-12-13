@@ -42,24 +42,16 @@ endif
   l2-ubuntu-openvpn-destroy \
   l2-ubuntu-tinker-apply \
   l2-ubuntu-tinker-destroy \
-  l3-arch-devops-inventory \
-  l3-arch-tinker-inventory \
-  l3-ubuntu-docker-inventory \
-  l3-ubuntu-legacy-inventory \
-  l3-ubuntu-openvpn-inventory \
-  l3-ubuntu-tinker-inventory \
   l3-arch-devops-converge \
   l3-arch-tinker-converge \
   l3-ubuntu-core-converge \
   l3-ubuntu-docker-converge \
-  l3-ubuntu-legacy-converge \
   l3-ubuntu-openvpn-converge \
   l3-ubuntu-tinker-converge \
   l4-arch-devops-smoke \
   l4-arch-tinker-smoke \
   l4-ubuntu-core-smoke \
   l4-ubuntu-docker-smoke \
-  l4-ubuntu-legacy-smoke \
   l4-ubuntu-openvpn-smoke \
   l4-ubuntu-tinker-smoke
 
@@ -130,31 +122,6 @@ l2-ubuntu-tinker-destroy: ## Plan/Destroy Ubuntu Tinker VM via Terraform (dry-ru
 	  scripts/l2-terraform.sh terraform/l2/ubuntu_tinker destroy'
 
 ## ---- L3 TARGETS PER OS/PERSONA
-
-l3-arch-devops-inventory: ## Render L3 Ansible inventory for Arch DevOps hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh arch devops'
-
-l3-arch-tinker-inventory: ## Render L3 Ansible inventory for Arch Tinker hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh arch tinker'
-
-l3-ubuntu-legacy-inventory: ## Render L3 Ansible inventory for Ubuntu Legacy hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu legacy'
-
-l3-ubuntu-docker-inventory: ## Render L3 Ansible inventory for Ubuntu Docker hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu docker'
-
-l3-ubuntu-openvpn-inventory: ## Render L3 Ansible inventory for Ubuntu OpenVPN hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu openvpn'
-
-l3-ubuntu-tinker-inventory: ## Render L3 Ansible inventory for Ubuntu Tinker hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-inventory.sh ubuntu tinker'
-
 # Usage examples:
 #   make l3-<os>-<persona>-converge                          	# all hosts, all tags
 #   make l3-<os>-<persona>-converge L3_LIMIT=host1          	# single host
@@ -162,17 +129,13 @@ l3-ubuntu-tinker-inventory: ## Render L3 Ansible inventory for Ubuntu Tinker hos
 #   make l3-<os>-<persona>-converge L3_TAGS=base             	# only "base" tag
 #   make l3-<os>-<persona>-converge L3_TAGS=base,desktop     	# multiple tags
 
-l3-arch-devops-converge: l3-arch-devops-inventory ## Converge Arch DevOps hosts (L3 via Ansible)
+l3-arch-devops-converge: ## Converge Arch DevOps hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh arch devops'
 
-l3-arch-tinker-converge: l3-arch-tinker-inventory ## Converge Arch Tinker hosts (L3 via Ansible)
+l3-arch-tinker-converge: ## Converge Arch Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh arch tinker'
-
-l3-ubuntu-legacy-converge: l3-ubuntu-legacy-inventory ## Converge Ubuntu Tinker hosts (L3 via Ansible)
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu legacy'
 
 l3-ubuntu-core-converge: ## Converge Ubuntu core hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
@@ -182,11 +145,11 @@ l3-ubuntu-docker-converge: ## Converge Ubuntu Docker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu ubuntu_misc'
 
-l3-ubuntu-openvpn-converge: l3-ubuntu-openvpn-inventory ## Converge Ubuntu OpenVPN hosts (L3 via Ansible)
+l3-ubuntu-openvpn-converge: ## Converge Ubuntu OpenVPN hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu openvpn'
+	  scripts/l3-converge.sh ubuntu ubuntu_openvpn'
 
-l3-ubuntu-tinker-converge: l3-ubuntu-tinker-inventory ## Converge Ubuntu Tinker hosts (L3 via Ansible)
+l3-ubuntu-tinker-converge: ## Converge Ubuntu Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l3-converge.sh ubuntu tinker'
 
@@ -199,10 +162,6 @@ l4-arch-devops-smoke: l3-arch-devops-inventory ## L4 smoke test for Arch DevOps 
 l4-arch-tinker-smoke: l3-arch-tinker-inventory ## L4 smoke test for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh arch tinker'
-
-l4-ubuntu-legacy-smoke: l3-ubuntu-legacy-inventory ## L4 smoke test for Ubuntu Legacy hosts
-	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l4-smoke.sh ubuntu legacy'
 
 l4-ubuntu-core-smoke: l3-ubuntu-core-inventory ## L4 smoke test for Ubuntu core hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
