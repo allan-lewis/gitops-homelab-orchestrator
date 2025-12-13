@@ -26,7 +26,10 @@ all:
     procyon:
       ansible_host: 192.168.86.106
     sirius:
-      ansible_host: 192.168.86.105 
+      ansible_host: 192.168.86.105
+    todash:
+      ansible_host: 192.168.86.218
+      gatus_slug: "(Ubuntu Docker/Sandbox)"
 
   children:
     fully_managed:
@@ -36,6 +39,8 @@ all:
             docker_compose:
               children:
                 docker_compose_monitoring:
+                  hosts:
+                    todash:
                   children:
                     docker_compose_it_tools:
                       hosts:
@@ -56,6 +61,9 @@ all:
             ubuntu_openvpn:
               hosts:
                 blaine:
+            ubuntu_tinker:
+              hosts:
+                todash:
     semi_managed:
       children:
         ubuntu:

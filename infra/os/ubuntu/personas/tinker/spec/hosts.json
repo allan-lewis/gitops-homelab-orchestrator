@@ -12,29 +12,8 @@
         "template_ref": "ubuntu/tinker/stable",
         "node": "polaris",
         "ipconfig": "ip=192.168.86.218/24,gw=192.168.86.1"
-      },
-
-      "ansible": {
-        "group_memberships": ["ubuntu_tinker", "docker_compose_monitoring"],
-
-        "vars": {}
-      }
-    }
-  },
-
-  "ansible": {
-    "all": {
-      "vars": {
-        "ansible_python_interpreter": "/usr/bin/python3"
-      }
-    },
-
-    "groups": {
-      "ubuntu_tinker": {
-        "vars": { 
-          "is_docker_enabled": true
-        }
       }
     }
   }
 }
+

@@ -151,7 +151,7 @@ l3-ubuntu-openvpn-converge: ## Converge Ubuntu OpenVPN hosts (L3 via Ansible)
 
 l3-ubuntu-tinker-converge: ## Converge Ubuntu Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh ubuntu tinker'
+	  scripts/l3-converge.sh ubuntu ubuntu_tinker'
 
 ## ---- L4 SMOKE TEST TARGETS
 
