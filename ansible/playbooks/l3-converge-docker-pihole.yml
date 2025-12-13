@@ -23,9 +23,9 @@
             mode: "0755"
       tags: [docker_pihole]
 
-    - name: Pi-hole DNS configuration
-      import_tasks: tasks/pihole-dns.yaml
-      tags: [docker_pihole]
+    # - name: Pi-hole DNS configuration
+    #   import_tasks: tasks/pihole-dns.yaml
+    #   tags: [docker_pihole]
 
   post_tasks:
     - name: Pi-hole post tasks

@@ -1,0 +1,95 @@
+# --- Post-install: verify Pi-hole and route host DNS via it ---
+
+- name: Local facts for container + IP
+  set_fact:
+    _pihole_container: "{{ pihole_container_name | default('pihole') }}"
+    _pihole_host_ip: "{{ pihole_host_ipv4 | default(ansible_default_ipv4.address) }}"
+
+# Wait until container is running; if a healthcheck exists, require 'healthy'
+- name: Wait until Pi-hole container is ready
+  community.docker.docker_container_info:
+    name: "{{ _pihole_container }}"
+  register: pihole_info
+  retries: 30
+  delay: 5
+  until: >
+    (pihole_info.container is defined) and
+    (pihole_info.container.State.Status | default('') == 'running') and
+    (
+      (pihole_info.container.State.Health is not defined) or
+      (pihole_info.container.State.Health.Status | default('') == 'healthy')
+    )
+
+# Sanity check inside the container (uses Pi-hole itself)
+- name: DNS test inside container
+  command: bash -lc "docker exec {{ _pihole_container }} dig +short example.com @127.0.0.1"
+  register: dns_container
+  changed_when: false
+
+- name: Assert container DNS works
+  assert:
+    that: dns_container.stdout | trim | length > 0
+    fail_msg: "Pi-hole DNS inside container failed. Check: docker logs {{ _pihole_container }}"
+
+# Point host DNS at Pi-hole (loopback + host LAN IP)
+- name: Update /etc/resolv.conf to use local Pi-hole
+  copy:
+    dest: /etc/resolv.conf
+    content: |
+      # Managed by Ansible: route all host DNS via Pi-hole
+      nameserver 127.0.0.1
+      nameserver {{ _pihole_host_ip }}
+      options timeout:2 attempts:2
+    owner: root
+    group: root
+    mode: "0644"
+
+# Host-level sanity check (uses /etc/resolv.conf)
+- name: Host DNS sanity check
+  command: bash -lc "getent hosts example.com >/dev/null 2>&1"
+  register: dns_host_post
+  changed_when: false
+  failed_when: dns_host_post.rc != 0
+
+- name: Initialize hosts list
+  ansible.builtin.set_fact:
+    _hosts_list: []
+
+- name: Append A-record hosts
+  ansible.builtin.set_fact:
+    _hosts_list: "{{ _hosts_list + [ item.address ~ ' ' ~ item.name ] }}"
+  loop: "{{ pihole_a_records | default([]) }}"
+
+- name: Initialize CNAME list
+  ansible.builtin.set_fact:
+    _cname_list: []
+
+- name: Append CNAME records
+  ansible.builtin.set_fact:
+    _cname_list: "{{ _cname_list + [ item.alias ~ ',' ~ item.target ] }}"
+  loop: "{{ pihole_cname_records | default([]) }}"
+
+  # Show A/AAAA list
+- name: Show dns.hosts JSON payload
+  ansible.builtin.debug:
+    msg: "{{ _hosts_list | to_json }}"
+
+# Show CNAME list
+- name: Show dns.cnameRecords JSON payload
+  ansible.builtin.debug:
+    msg: "{{ _cname_list | to_json }}"
+  when: _cname_list | length > 0
+
+- name: Push A/AAAA (dns.hosts)
+  command: >
+    docker exec {{ pihole_container_name | default('pihole') }}
+    pihole-FTL --config dns.hosts '{{ _hosts_list | to_json }}'
+  when: _hosts_list | length > 0
+  changed_when: true
+
+- name: Push CNAMEs (dns.cnameRecords)
+  command: >
+    docker exec {{ pihole_container_name | default('pihole') }}
+    pihole-FTL --config dns.cnameRecords '{{ _cname_list | to_json }}'
+  when: _cname_list | length > 0
+  changed_when: true

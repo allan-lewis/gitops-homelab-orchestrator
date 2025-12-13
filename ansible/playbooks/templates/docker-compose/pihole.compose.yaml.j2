@@ -1,0 +1,26 @@
+services:
+  pihole:
+    image: docker.io/pihole/pihole:2025.11.1
+    container_name: pihole
+    hostname: pihole
+    restart: unless-stopped
+    environment:
+      FTLCONF_dhcp_active: 'false'
+      FTLCONF_ntp_sync_active: 'false'
+      FTLCONF_ntp_ipv4_active: 'false'
+      FTLCONF_ntp_ipv6_active: 'false'
+      TZ: "{{ gitops_tz }}"
+      FTLCONF_webserver_api_password: '{{ pihole_admin_password }}'
+      FTLCONF_dns_listeningMode: 'all'      
+      FTLCONF_dns_upstreams: "{{ pihole_upstreams | join(';') }}"
+    volumes:
+      - "/var/lib/pihole:/etc/pihole"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "30080:80/tcp"
+    healthcheck:
+      test: ["CMD", "pihole", "status"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
