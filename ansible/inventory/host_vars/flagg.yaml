@@ -6,3 +6,26 @@ backup_runner_healthchecks_status: "https://healthchecks.io/b/2/125505b2-327a-40
 
 homelab_metrics_forward_url: "http://{{hostvars['gilead'].ansible_host}}:9100"
 
+"backup_runner_volumes": [
+  { 
+    "src": "/var/lib/gatus",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/gatus_lib" 
+  },
+  { 
+    "src": "/etc/gatus",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/gatus_config" 
+  },
+  { 
+    "src": "/var/lib/pihole",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/pihole_lib" 
+  },
+  { 
+    "src": "/etc/traefik",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/traefik_config" 
+  },
+  { 
+    "src": "/var/lib/traefik/acme",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/traefik_acme" 
+  }
+]
+

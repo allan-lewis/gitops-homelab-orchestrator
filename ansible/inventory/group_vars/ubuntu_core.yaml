@@ -1,6 +1,10 @@
 ---
-# ssh_keys_install_private_for_ansible_user: true
-# ssh_keys_install_public_for_ansible_user: true
-# ssh_keys_install_private_for_root: true
-# ssh_keys_install_public_for_root: true
-
+is_backup_enabled: true
+backup_runner_cron_hour: "*"
+backup_runner_user: "allan"
+backup_runner_remote_host: "{{ default_remote_nas_ip }}"
+ssh_keys_install_private_for_ansible_user: true
+ssh_keys_install_public_for_ansible_user: true
+ssh_keys_install_private_for_root: true
+ssh_keys_install_public_for_root: true
+is_restore_enabled: false

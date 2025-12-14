@@ -1,4 +1,9 @@
 ---
+- name: Reset compose path facts for this invocation
+  ansible.builtin.set_fact:
+    _compose_paths_create: []
+    _compose_paths_nfs: []
+
 - name: Ensure project dir exists
   ansible.builtin.file:
     path: "{{ compose_project_dir }}"
