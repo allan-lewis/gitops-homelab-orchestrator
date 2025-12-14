@@ -1,0 +1,41 @@
+doppler_service_token: "{{ lookup('env', 'DOPPLER_SERVICE_TOKEN_PRODUCTION') }}"
+doppler_config: "prd"
+doppler_project: "default"
+
+ansible_environment: "production"
+
+is_db_backup_enabled: true
+postgres_db_backup_enabled: true
+postgres_db_backup_dir: "/var/lib/postgres-db-dumps"
+postgres_db_k8s_namespace: "authentik"
+postgres_db_k8s_selector: "app.kubernetes.io/name=postgresql,app.kubernetes.io/component=primary"
+postgres_db_name: "authentik"
+postgres_db_user: "authentik"
+postgres_db_password: "{{ lookup('env','AUTHENTIK_POSTGRESQL_PASSWORD') }}"
+
+is_s3_mirror_enabled: true
+s3_mirror_base_dir: "/var/lib/s3-mirror"
+s3_mirror_buckets: [
+  "gitops-homelab-longhorn",
+  "gitops-homelab-longhorn-attic",
+  "gitops-homelab-longhorn-staging",
+  "gitops-homelab-terraform",
+  "gitops-homelab-orchestrator-tf"
+]
+
+is_backup_enabled: true
+backup_runner_user: "allan"
+backup_runner_remote_host: "{{ default_remote_nas_ip }}"
+backup_runner_cron_hour: "*"
+backup_runner_cron_minute: "10"
+backup_runner_volumes: [
+  { 
+    src: "{{ s3_mirror_base_dir }}",
+    dest: "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/s3-mirror" 
+  },
+  { 
+    src: "{{ postgres_db_backup_dir }}",
+    dest: "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/db-dumps" 
+  }
+]
+

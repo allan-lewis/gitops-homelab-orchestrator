@@ -74,6 +74,8 @@ all:
         arch:
           children:
             arch_devops:
+              hosts:
+                langolier:
             arch_tinker:
               hosts:
                 cujo:
