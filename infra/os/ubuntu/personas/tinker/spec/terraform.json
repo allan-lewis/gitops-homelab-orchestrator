@@ -1,11 +1,10 @@
 {
   "hosts": {
     "todash": {
-      "ip": "192.168.86.218",
-      "ssh_user": "lab",
-      "tags": ["orchestrator", "terraform", "ubuntu", "tinker"],
-
       "terraform": {
+        "ip": "192.168.86.218",
+        "ssh_user": "lab",
+        "tags": ["orchestrator", "terraform", "ubuntu", "tinker"],
         "cpu": 2,
         "memory_mb": 2048,
         "disk_gb": 32,

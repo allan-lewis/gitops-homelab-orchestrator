@@ -1,6 +1,6 @@
 locals {
   # Path to this persona's hosts.json spec
-  hosts_json_path = "${path.module}/../../../infra/os/ubuntu/personas/tinker/spec/hosts.json"
+  hosts_json_path = "${path.module}/../../../infra/os/ubuntu/personas/tinker/spec/terraform.json"
 
   # Logical template refs → manifest JSON files for this persona
   template_manifest_map = {

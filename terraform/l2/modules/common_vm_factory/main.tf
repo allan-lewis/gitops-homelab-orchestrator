@@ -31,9 +31,9 @@ locals {
       disk_gb   = host.terraform.disk_gb
 
       # From tags + network fields
-      tags     = host.tags
-      ip       = host.ip
-      ssh_user = host.ssh_user
+      tags     = host.terraform.tags
+      ip       = host.terraform.ip
+      ssh_user = host.terraform.ssh_user
 
       # ipconfig string is already in the right format for cloudinit
       ipconfig0 = host.terraform.ipconfig

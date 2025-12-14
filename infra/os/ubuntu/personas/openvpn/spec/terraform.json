@@ -1,11 +1,10 @@
 {
   "hosts": {
     "blaine": {
-      "ip": "192.168.86.223",
-      "ssh_user": "lab",
-      "tags": ["orchestrator", "terraform", "ubuntu", "openvpn"],
-
       "terraform": {
+        "ip": "192.168.86.223",
+        "ssh_user": "lab",
+        "tags": ["orchestrator", "terraform", "ubuntu", "openvpn"],
         "cpu": 4,
         "memory_mb": 4096,
         "disk_gb": 32,
