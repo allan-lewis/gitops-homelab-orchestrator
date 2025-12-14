@@ -71,6 +71,17 @@ all:
   children:
     fully_managed:
       children:
+        arch:
+          children:
+            arch_devops:
+            arch_tinker:
+              hosts:
+                cujo:
+            docker_compose:
+              children:
+                docker_compose_monitoring:
+                  hosts:
+                    cujo:
         ubuntu:
           children:
             docker_compose:

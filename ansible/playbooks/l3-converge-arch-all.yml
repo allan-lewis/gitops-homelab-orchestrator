@@ -1,0 +1,70 @@
+---
+#### GENERAL OS CONVERGENCE
+- name: Arch OS Convergence
+  hosts: "{{ converge_group }}:&arch"
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Run arch_base role 
+      ansible.builtin.include_role:
+        name: arch_base
+      when: is_base_enabled
+
+    - name: Run arch_hardening role 
+      ansible.builtin.include_role:
+        name: arch_hardening
+      when: is_harden_enabled
+
+    - name: Run arch_services role 
+      ansible.builtin.include_role:
+        name: arch_services
+      when: is_services_enabled
+
+    - name: Run arch_shell role 
+      ansible.builtin.include_role:
+        name: arch_shell
+      when: is_shell_enabled
+
+    - name: Run arch_aur role 
+      ansible.builtin.include_role:
+        name: arch_aur
+      when: is_aur_enabled
+
+    - name: Run arch_desktop role 
+      ansible.builtin.include_role:
+        name: arch_desktop
+      when: is_desktop_enabled
+
+      ## BACKUP: order for these 3 matters - install SSH keys, restore first, then schedule backups
+    - name: Run common_install_ssh_keys role
+      ansible.builtin.include_role:
+        name: common_install_ssh_keys
+      when: is_ssh_keys_enabled
+
+    - name: Run common_backup_restore role
+      ansible.builtin.include_role:
+        name: common_backup_restore
+      when: is_restore_enabled
+
+    - name: Run common_backup_runner role
+      ansible.builtin.include_role:
+        name: common_backup_runner
+      when: is_backup_enabled
+      #### BACKUP
+
+    - name: Run common_s3_local_mirror role
+      ansible.builtin.include_role:
+        name: common_s3_local_mirror
+      when: is_s3_mirror_enabled
+
+    - name: Run common_postgres_db_backup role
+      ansible.builtin.include_role:
+        name: common_postgres_db_backup
+      when: is_db_backup_enabled
+
+    - name: Run common_node_exporter role
+      ansible.builtin.include_role:
+        name: common_node_exporter
+      when: is_node_exporter_enabled
+

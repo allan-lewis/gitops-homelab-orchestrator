@@ -1,0 +1,10 @@
+---
+- name: Install DevOps Tools and Services 
+  hosts: "{{ converge_group }}:&arch_devops"
+  become: yes
+  gather_facts: yes
+  tags: [arch_devops]
+
+  roles:
+    - role: arch_devops
+

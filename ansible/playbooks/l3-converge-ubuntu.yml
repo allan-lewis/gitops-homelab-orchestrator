@@ -1,6 +1,6 @@
 ---
 - import_playbook: l3-converge-ubuntu-all.yml
-- import_playbook: l3-converge-docker-compose.yml
+- import_playbook: l3-converge-ubuntu-docker-compose.yml
 - import_playbook: l3-converge-docker-monitoring.yml
 - import_playbook: l3-converge-docker-cloudflare.yml
 - import_playbook: l3-converge-docker-twingate.yml

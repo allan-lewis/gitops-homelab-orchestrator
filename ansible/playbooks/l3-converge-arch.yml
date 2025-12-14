@@ -1,29 +1,6 @@
 ---
-#### GENERAL OS CONVERGENCE
-- name: Arch OS Convergence
-  hosts: arch
-  gather_facts: true
-  become: true
-
-  roles:
-    ## OS-SPECIFIC; DEFAULT ON
-    - { role: arch_base,                  tags: ["base"],             when: is_base_enabled | default(true) }
-    - { role: arch_hardening,             tags: ["harden"],           when: is_harden_enabled | default(true) }
-    - { role: arch_services,              tags: ["services"],         when: is_services_enabled | default(true) }
-    - { role: arch_shell,                 tags: ["shell"],            when: is_shell_enabled | default(true) }
-    ## OS-SPECIFIC; DEFAULT OFF
-    - { role: arch_aur,                   tags: ["aur"],              when: is_aur_enabled | default(false) }
-    - { role: arch_desktop,               tags: ["desktop"],          when: is_desktop_enabled | default(false)}
-    - { role: arch_docker_compose,        tags: ["docker"],           when: is_docker_enabled | default(false) }
-    - { role: arch_devops,                tags: ["devops"],           when: is_devops_enabled | default(false)}
-    ## CROSS-OS; DEFAULT OFF
-    #### order for these 3 matters - install SSH keys, restore first, then schedule backups
-    - { role: common_install_ssh_keys,    tags: ["ssh_keys"],         when: is_ssh_keys_enabled | default(false) }
-    - { role: common_backup_restore,      tags: ["restore"],          when: is_restore_enabled | default(false) }
-    - { role: common_backup_runner,       tags: ["backup"],           when: is_backup_enabled | default(false) }
-    - { role: common_s3_local_mirror,     tags: ["s3_mirror"],        when: is_s3_mirror_enabled | default(false) }
-    - { role: common_postgres_db_backup,  tags: ["db_backup"],        when: is_db_backup_enabled | default(false) }
-    - { role: common_node_exporter,       tags: ["node_exporter"],    when: is_node_exporter_enabled | default(false) }
-
-#### DOCKER MONITORING CONVERGENCE
+- import_playbook: l3-converge-arch-all.yml
+- import_playbook: l3-converge-arch-docker-compose.yml
 - import_playbook: l3-converge-docker-monitoring.yml
+- import_playbook: l3-converge-arch-devops.yml
+

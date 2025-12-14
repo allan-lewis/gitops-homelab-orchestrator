@@ -1,0 +1,15 @@
+---
+## FEATURE FLAGS FOR ALL UBUNTU HOSTS
+is_aur_enabled: false
+is_backup_enabled: false
+is_base_enabled: true
+is_db_backup_enabled: false
+is_desktop_enabled: false
+is_harden_enabled: true
+is_node_exporter_enabled: false
+is_restore_enabled: false
+is_s3_mirror_enabled: false
+is_services_enabled: true
+is_shell_enabled: true
+is_ssh_keys_enabled: false
+

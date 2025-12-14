@@ -131,11 +131,11 @@ l2-ubuntu-tinker-destroy: ## Plan/Destroy Ubuntu Tinker VM via Terraform (dry-ru
 
 l3-arch-devops-converge: ## Converge Arch DevOps hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh arch devops'
+	  scripts/l3-converge.sh arch arch_devops'
 
 l3-arch-tinker-converge: ## Converge Arch Tinker hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
-	  scripts/l3-converge.sh arch tinker'
+	  scripts/l3-converge.sh arch arch_tinker'
 
 l3-ubuntu-core-converge: ## Converge Ubuntu core hosts (L3 via Ansible)
 	@$(RUN) bash -lc 'set -euo pipefail; \
@@ -155,26 +155,27 @@ l3-ubuntu-tinker-converge: ## Converge Ubuntu Tinker hosts (L3 via Ansible)
 
 ## ---- L4 SMOKE TEST TARGETS
 
-l4-arch-devops-smoke: l3-arch-devops-inventory ## L4 smoke test for Arch DevOps hosts
+l4-arch-devops-smoke: ## L4 smoke test for Arch DevOps hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh arch devops'
 
-l4-arch-tinker-smoke: l3-arch-tinker-inventory ## L4 smoke test for Arch Tinker hosts
+l4-arch-tinker-smoke: ## L4 smoke test for Arch Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh arch tinker'
 
-l4-ubuntu-core-smoke: l3-ubuntu-core-inventory ## L4 smoke test for Ubuntu core hosts
+l4-ubuntu-core-smoke: ## L4 smoke test for Ubuntu core hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh ubuntu core'
 
-l4-ubuntu-docker-smoke: l3-ubuntu-docker-inventory ## L4 smoke test for Ubuntu Docker hosts
+l4-ubuntu-docker-smoke: ## L4 smoke test for Ubuntu Docker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh ubuntu docker'
 
-l4-ubuntu-openvpn-smoke: l3-ubuntu-openvpn-inventory ## L4 smoke test for Ubuntu OpenVPN hosts
+l4-ubuntu-openvpn-smoke: ## L4 smoke test for Ubuntu OpenVPN hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh ubuntu openvpn'
 
-l4-ubuntu-tinker-smoke: l3-ubuntu-tinker-inventory ## L4 smoke test for Ubuntu Tinker hosts
+l4-ubuntu-tinker-smoke: ## L4 smoke test for Ubuntu Tinker hosts
 	@$(RUN) bash -lc 'set -euo pipefail; \
 	  scripts/l4-smoke.sh ubuntu tinker'
+
