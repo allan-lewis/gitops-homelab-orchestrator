@@ -1,8 +1,1 @@
-{
-  "iso_name": "archlinux-2025.12.15-x86_64.iso",
-  "built_at": "2025-12-15T17:23:22Z",
-  "git_sha": "64aedc50192078edfc98dbbd268f9298d7b4604f",
-  "proxmox_node": "shardik",
-  "proxmox_storage": "local",
-  "uploader_host": "tak"
-}
+../artifacts/archlinux-2025.12.15-x86_64.json

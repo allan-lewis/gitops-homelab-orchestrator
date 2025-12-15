@@ -112,11 +112,17 @@ fi
 echo "==> Generating ISO build manifest"
 
 ISO_PATH=$(echo .iso-build/archiso/out/*.iso)
-ISO_NAME=$(basename "$ISO_PATH")
+ISO_NAME="$(basename "$ISO_PATH")"
 BASE_NAME="${ISO_NAME%.iso}"
-MANIFEST_PATH="infra/os/arch/artifacts/${BASE_NAME}.json"
 
-mkdir -p infra/os/arch/artifacts
+ARTIFACTS_DIR="infra/os/arch/artifacts"
+SPEC_DIR="infra/os/arch/spec"
+
+MANIFEST_PATH="${ARTIFACTS_DIR}/${BASE_NAME}.json"
+STABLE_LINK="${SPEC_DIR}/iso-manifest-stable.json"
+
+mkdir -p "$ARTIFACTS_DIR"
+mkdir -p "$SPEC_DIR"
 
 cat > "$MANIFEST_PATH" << 'EOF'
 {
@@ -134,13 +140,13 @@ inplace_sed() {
   local expr="$1"
   local file="$2"
   if sed --version >/dev/null 2>&1; then
-    sed -i "$expr" "$file"      # GNU sed (Linux)
+    sed -i "$expr" "$file"
   else
-    sed -i '' "$expr" "$file"   # BSD sed (macOS)
+    sed -i '' "$expr" "$file"
   fi
 }
 
-# Repo revision for traceability (not GitHub Actions specific)
+# Repo revision for traceability
 GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 
 inplace_sed "s|__ISO_NAME__|${ISO_NAME}|g" "$MANIFEST_PATH"
@@ -150,27 +156,24 @@ inplace_sed "s|__PVE_NODE__|${PVE_NODE}|g" "$MANIFEST_PATH"
 inplace_sed "s|__PVE_ISO_STORAGE__|${PVE_ISO_STORAGE}|g" "$MANIFEST_PATH"
 inplace_sed "s|__HOSTNAME__|$(hostname)|g" "$MANIFEST_PATH"
 
-echo "Wrote manifest to: $MANIFEST_PATH"
-echo "=== Manifest ==="
+echo "Wrote manifest: $MANIFEST_PATH"
 cat "$MANIFEST_PATH"
-echo "=== END ==="
 
 ########################################
-# Update stable ISO manifest (optional)
+# Update stable manifest symlink (optional)
 ########################################
 
 if [[ "${UPDATE_STABLE:-yes}" == "yes" ]]; then
-  MANIFEST_STABLE="infra/os/arch/spec/iso-manifest-stable.json"
-  echo "==> update-stable=yes → updating ${MANIFEST_STABLE}"
+  echo "==> update-stable=yes → updating stable manifest symlink"
 
-  mkdir -p infra/os/arch/spec
-  cp "$MANIFEST_PATH" "$MANIFEST_STABLE"
+  # Always replace the symlink atomically
+  ln -sfn "../artifacts/${BASE_NAME}.json" "$STABLE_LINK"
 
-  echo "=== Stable manifest updated ==="
-  cat "$MANIFEST_STABLE"
-  echo "=== END ==="
+  echo "Stable manifest now points to:"
+  ls -l "$STABLE_LINK"
 else
-  echo "==> update-stable=no → skipping stable manifest update"
+  echo "==> update-stable=no → stable manifest symlink unchanged"
 fi
+
 
 echo "Done."
