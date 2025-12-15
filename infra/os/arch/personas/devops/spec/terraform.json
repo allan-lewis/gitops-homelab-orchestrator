@@ -5,11 +5,11 @@
         "ip": "192.168.86.216",
         "ssh_user": "lab",
         "tags": ["orchestrator", "terraform", "arch", "devops"],
-        "cpu": 2,
-        "memory_mb": 2048,
+        "cpu": 4,
+        "memory_mb": 4096,
         "disk_gb": 32,
         "template_ref": "arch/devops/stable",
-        "node": "polaris",
+        "node": "shardik",
         "ipconfig": "ip=192.168.86.216/24,gw=192.168.86.1"
       }
     }
