@@ -6,10 +6,10 @@
         "ssh_user": "lab",
         "tags": ["orchestrator", "terraform", "ubuntu", "docker", "misc"],
         "cpu": 4,
-        "memory_mb": 4096,
+        "memory_mb": 8192,
         "disk_gb": 64,
         "template_ref": "ubuntu/docker/stable",
-        "node": "polaris",
+        "node": "shardik",
         "ipconfig": "ip=192.168.86.228/24,gw=192.168.86.1"
       }
     },
@@ -20,9 +20,9 @@
         "tags": ["orchestrator", "terraform", "ubuntu", "docker", "media"],
         "cpu": 4,
         "memory_mb": 8192,
-        "disk_gb": 128,
+        "disk_gb": 64,
         "template_ref": "ubuntu/docker/stable",
-        "node": "polaris",
+        "node": "shardik",
         "ipconfig": "ip=192.168.86.224/24,gw=192.168.86.223"
       }
     }
