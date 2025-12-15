@@ -31,7 +31,7 @@ endif
   help \
   clean \
   l0-runway \
-	l1-arch-iso \
+  l1-arch-iso \
   l1-arch-template \
   l1-ubuntu-template \
   l2-arch-devops-apply \

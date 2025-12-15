@@ -15,7 +15,7 @@ BUILD_ROOT=".iso-build/archiso"
 PROFILE_DIR="${BUILD_ROOT}/profile"
 OUT_DIR="${BUILD_ROOT}/out"
 
-AUTOMATED_SRC="infra/arch/iso/automated_script.sh"
+AUTOMATED_SRC="infra/os/arch/iso/automated_script.sh"
 
 # You can export these from env or let the script no-op the upload part
 PVE_ACCESS_HOST="${PVE_ACCESS_HOST:-}"
@@ -23,6 +23,7 @@ PVE_NODE="${PVE_NODE:-}"
 PVE_ISO_STORAGE="${PVE_ISO_STORAGE:-local}"
 PM_TOKEN_ID="${PM_TOKEN_ID:-}"
 PM_TOKEN_SECRET="${PM_TOKEN_SECRET:-}"
+PVE_SSH_IP="${PVE_SSH_IP:-}"
 
 # UID/GID for file ownership on host (works on macOS and Linux)
 HOST_UID="$(id -u)"
@@ -45,11 +46,9 @@ docker run --rm -i --privileged \
     chown -R "$HOST_UID:$HOST_GID" .iso-build/archiso/profile
   '
 
-exit 0
-
 echo "==> Installing custom automated_script.sh into profile"
 if [[ ! -f "${AUTOMATED_SRC}" ]]; then
-  echo "ERROR: ${AUTOMATED_SRC} not found" >&2
+  echo "ERROR: ${AUTOMATED_SRC} not found (cwd: $(pwd))" >&2
   exit 1
 fi
 
@@ -92,7 +91,9 @@ echo "ISO path: ${ISO_PATH}"
 if [[ -n "${PVE_ACCESS_HOST}" && -n "${PVE_NODE}" && -n "${PM_TOKEN_ID}" && -n "${PM_TOKEN_SECRET}" ]]; then
   echo "==> Uploading ISO to Proxmox via API"
 
-  BASE_URL="${PVE_ACCESS_HOST%/}"
+  BASE_URL="https://${PVE_SSH_IP}:8006"
+
+  echo "Using base URL: ${BASE_URL}"
 
   curl -k --fail-with-body \
     -X POST "${BASE_URL}/api2/json/nodes/${PVE_NODE}/storage/${PVE_ISO_STORAGE}/upload?content=iso" \
@@ -102,6 +103,74 @@ if [[ -n "${PVE_ACCESS_HOST}" && -n "${PVE_NODE}" && -n "${PM_TOKEN_ID}" && -n "
   echo "Upload complete."
 else
   echo "==> Skipping Proxmox upload (PVE_ACCESS_HOST / PM_TOKEN_* not set)"
+fi
+
+########################################
+# Generate ISO build manifest
+########################################
+
+echo "==> Generating ISO build manifest"
+
+ISO_PATH=$(echo .iso-build/archiso/out/*.iso)
+ISO_NAME=$(basename "$ISO_PATH")
+BASE_NAME="${ISO_NAME%.iso}"
+MANIFEST_PATH="infra/os/arch/artifacts/${BASE_NAME}.json"
+
+mkdir -p infra/os/arch/artifacts
+
+cat > "$MANIFEST_PATH" << 'EOF'
+{
+  "iso_name": "__ISO_NAME__",
+  "built_at": "__BUILT_AT__",
+  "git_sha": "__GIT_SHA__",
+  "proxmox_node": "__PVE_NODE__",
+  "proxmox_storage": "__PVE_ISO_STORAGE__",
+  "uploader_host": "__HOSTNAME__"
+}
+EOF
+
+# Portable in-place sed (GNU + BSD)
+inplace_sed() {
+  local expr="$1"
+  local file="$2"
+  if sed --version >/dev/null 2>&1; then
+    sed -i "$expr" "$file"      # GNU sed (Linux)
+  else
+    sed -i '' "$expr" "$file"   # BSD sed (macOS)
+  fi
+}
+
+# Repo revision for traceability (not GitHub Actions specific)
+GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+
+inplace_sed "s|__ISO_NAME__|${ISO_NAME}|g" "$MANIFEST_PATH"
+inplace_sed "s|__BUILT_AT__|$(date -u +"%Y-%m-%dT%H:%M:%SZ")|g" "$MANIFEST_PATH"
+inplace_sed "s|__GIT_SHA__|${GIT_SHA}|g" "$MANIFEST_PATH"
+inplace_sed "s|__PVE_NODE__|${PVE_NODE}|g" "$MANIFEST_PATH"
+inplace_sed "s|__PVE_ISO_STORAGE__|${PVE_ISO_STORAGE}|g" "$MANIFEST_PATH"
+inplace_sed "s|__HOSTNAME__|$(hostname)|g" "$MANIFEST_PATH"
+
+echo "Wrote manifest to: $MANIFEST_PATH"
+echo "=== Manifest ==="
+cat "$MANIFEST_PATH"
+echo "=== END ==="
+
+########################################
+# Update stable ISO manifest (optional)
+########################################
+
+if [[ "${UPDATE_STABLE:-yes}" == "yes" ]]; then
+  MANIFEST_STABLE="infra/os/arch/spec/iso-manifest-stable.json"
+  echo "==> update-stable=yes → updating ${MANIFEST_STABLE}"
+
+  mkdir -p infra/os/arch/spec
+  cp "$MANIFEST_PATH" "$MANIFEST_STABLE"
+
+  echo "=== Stable manifest updated ==="
+  cat "$MANIFEST_STABLE"
+  echo "=== END ==="
+else
+  echo "==> update-stable=no → skipping stable manifest update"
 fi
 
 echo "Done."
