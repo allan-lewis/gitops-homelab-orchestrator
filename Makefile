@@ -31,6 +31,7 @@ endif
   help \
   clean \
   l0-runway \
+	l1-arch-iso \
   l1-arch-template \
   l1-ubuntu-template \
   l2-arch-devops-apply \
@@ -67,6 +68,9 @@ l0-runway: ## L0 runway checks (OS/persona independent)
 	@$(RUN) bash -lc 'scripts/l0-runway.sh'
 
 ## ---- L1 TARGETS FOR ALL PERSONAS FOR A SINGLE OS
+l1-arch-iso: ## L1 Arch ISO build/upload
+	@$(RUN) bash -lc 'set -euo pipefail; \
+	  scripts/l1-upload-arch-iso.sh'
 
 # Usage examples:
 #   make l1-arch-template                    # full packer build + manifest
