@@ -31,7 +31,7 @@ variable "pm_tls_insecure" {
 variable "storage" {
   description = "Proxmox datastore/storage ID for the boot disk"
   type        = string
-  default     = "local-lvm"
+  default     = "ssd0"
 }
 
 variable "scsihw" {
