@@ -4,7 +4,7 @@ variable "name" {
 }
 
 variable "node" {
-  description = "Proxmox node name (e.g., polaris)"
+  description = "Proxmox node name (e.g., shardik)"
   type        = string
 }
 

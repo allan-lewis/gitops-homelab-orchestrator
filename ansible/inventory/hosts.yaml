@@ -46,8 +46,6 @@ all:
     patricia:
       ansible_host: 192.168.86.224
       gatus_slug: "(Ubuntu Docker/Media)"
-    polaris:
-      ansible_host: 192.168.86.101
     shardik:
       ansible_host: 192.168.86.201
       gatus_slug: "(Proxmox Hypervisor)"
@@ -57,9 +55,6 @@ all:
     roland:
       ansible_host: 192.168.86.151
       gatus_slug: "(K8s Control Plane)"
-    sheemie:
-      ansible_host: 192.168.86.229
-      gatus_slug: "(GitHub Runner)"
     sirius:
       ansible_host: 192.168.86.105
       gatus_slug: "(Proxmox Hypervisor)"

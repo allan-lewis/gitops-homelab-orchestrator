@@ -5,8 +5,8 @@ set -euo pipefail
 # ubuntu-build-template.sh
 #
 # Requirements (env vars):
-#   PVE_ACCESS_HOST   e.g. https://polaris.hosts.allanshomelab.com
-#   PVE_NODE          e.g. polaris
+#   PVE_ACCESS_HOST   e.g. https://shardik.hosts.allanshomelab.com
+#   PVE_NODE          e.g. shardik
 #   PVE_STORAGE_VM    e.g. local-lvm
 #   PVE_SSH_USER      e.g. gitops or root (must be able to run qm)
 #   PVE_SSH_IP        e.g. 10.0.0.10 (direct IP, not reverse proxy)

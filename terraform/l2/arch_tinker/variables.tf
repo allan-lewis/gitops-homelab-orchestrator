@@ -3,7 +3,7 @@
 #
 
 variable "pve_access_host" {
-  description = "Base URL for Proxmox API (e.g., https://polaris.hosts.allanshomelab.com)"
+  description = "Base URL for Proxmox API (e.g., https://shardik.hosts.allanshomelab.com)"
   type        = string
 }
 

@@ -7,7 +7,7 @@ set -euo pipefail
 #   capture-truenas-boot.sh <proxmox-node> <vmid> <local-output-dir>
 #
 # Example:
-#   capture-truenas-boot.sh polaris 105 artifacts/truenas/boot
+#   capture-truenas-boot.sh pennywise 105 artifacts/truenas/boot
 #
 # Requirements:
 #   - Run this from your operations host.
