@@ -50,6 +50,10 @@ traefik_services:
     host: polaris.hosts.allanshomelab.com
     url: "https://{{ hostvars['polaris'].ansible_host }}:8006"
     scheme: https
+  - name: shardik
+    host: shardik.hosts.allanshomelab.com
+    url: "https://{{ hostvars['shardik'].ansible_host }}:8006"
+    scheme: https
   - name: immich
     host: photos.allanandvaia.com
     url: "http://{{ hostvars['misery'].ansible_host }}:2283"

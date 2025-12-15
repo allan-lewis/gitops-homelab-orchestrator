@@ -35,6 +35,10 @@ gatus_https_endpoints:
     group: "Sites (Hosts)"
     url: "https://polaris.hosts.allanshomelab.com"
     pattern: "*Proxmox*"
+  - name: "Shardik"
+    group: "Sites (Hosts)"
+    url: "https://shardik.hosts.allanshomelab.com"
+    pattern: "*Proxmox*"
   - name: "Sirius"
     group: "Sites (Hosts)"
     url: "https://sirius.hosts.allanshomelab.com"
@@ -175,7 +179,7 @@ gatus_https_endpoints:
     group: "Sites (Media)"
     url: "https://transmission.media.allanshomelab.com/transmission/web/"
     pattern: "*Transmission*"
-  - name: KVM (Polaris)
+  - name: KVM (Shardik)
     group: "Sites (KVM)"
     url: "https://one.kvm.allanshomelab.com"
     pattern: "*JetKVM*"

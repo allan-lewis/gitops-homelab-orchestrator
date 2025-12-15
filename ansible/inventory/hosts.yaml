@@ -48,6 +48,8 @@ all:
       gatus_slug: "(Ubuntu Docker/Media)"
     polaris:
       ansible_host: 192.168.86.101
+    shardik:
+      ansible_host: 192.168.86.201
       gatus_slug: "(Proxmox Hypervisor)"
     procyon:
       ansible_host: 192.168.86.106
@@ -143,6 +145,6 @@ all:
     unmanaged:
       hosts:
         gilead:
-        polaris:
+        shardik:
         sirius:
 
