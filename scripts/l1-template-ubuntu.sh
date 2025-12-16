@@ -174,7 +174,7 @@ if [[ "${UPDATE_STABLE}" == "yes" ]]; then
   STABLE_PATH="${SPEC_DIR}/vm-template-stable.json"
 
   # Create/update symlink atomically
-  ln -sfn "$(basename "${MANIFEST_FILE}")" "${STABLE_PATH}"
+  ln -sf "../artifacts/$(basename "${MANIFEST_FILE}")" "${STABLE_PATH}"
 
   echo
   echo "Stable manifest now points to: ${STABLE_PATH}"
