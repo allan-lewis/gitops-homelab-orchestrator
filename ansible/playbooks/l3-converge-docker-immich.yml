@@ -1,0 +1,50 @@
+- name: Immich Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_immich"
+  become: yes
+  gather_facts: yes
+  tags: [docker_immich]
+
+  roles:
+    - role: common_docker_compose_services 
+      vars:
+        compose_app_name: immich
+        compose_immich_version: "v2.3.1"
+
+        # Use the vendor compose from the exact release tag
+        compose_source_type: url
+        compose_url: "https://github.com/immich-app/immich/releases/download/{{ compose_immich_version }}/docker-compose.yml"
+
+        # Everything here is auto-validated (undefined/empty => fail early)
+        compose_env:
+          IMMICH_VERSION: "{{ compose_immich_version }}"
+          UPLOAD_LOCATION: "/mnt/immich"
+          DB_DATA_LOCATION: "/srv/immich/postgres"  
+          REDIS_DATA_LOCATION: "/srv/immich/redis"
+          MODEL_CACHE_LOCATION: "/srv/immich/model-cache"
+          COMPOSE_PROJECT_NAME: "immich"
+          DB_USERNAME: "postgres"
+          DB_DATABASE_NAME: "immich"
+          DB_PASSWORD: "{{ lookup('env', 'IMMICH_DB_PASSWORD') }}"
+
+        compose_paths:
+          # NFS uploads (do not chown from client; role will verify it's NFS-mounted)
+          - path: "/mnt/immich"
+            nfs: true
+            nfs_server: "{{ hostvars['procyon'].ansible_host }}"
+            nfs_path: "/mnt/pool1/immich"
+            nfs_opts: "rw"
+
+          # Postgres data (local; container will chown on first init)
+          - path: "/srv/immich/postgres"
+            create: true
+            mode: "0755"
+
+          # Redis data (local; volatile)
+          - path: "/srv/immich/redis"
+            create: true
+            mode: "0755"
+
+          # Model cache (local; volatile) — leave root-owned
+          - path: "/srv/immich/model-cache"
+            create: true
+            mode: "0755"

@@ -1,0 +1,13 @@
+services:
+  tautulli:
+    image: ghcr.io/tautulli/tautulli:latest
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - /etc/tautulli:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="{{ gitops_tz }}"
+    ports:
+      - 8181:8181

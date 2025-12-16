@@ -1,0 +1,19 @@
+- name: Tautulli Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_tautulli"
+  become: yes
+  gather_facts: yes
+  tags: [docker_tautulli]
+
+  roles:
+    - role: common_docker_compose_services 
+      vars:  
+        compose_app_name: tautulli
+        compose_source_type: template
+        compose_template_src: templates/docker-compose/tautulli.compose.yaml.j2
+
+        compose_paths:
+          - path: "/etc/tautulli"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"

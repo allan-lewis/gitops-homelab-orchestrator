@@ -1,0 +1,36 @@
+- name: Jellyfin Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_jellyfin"
+  become: yes
+  gather_facts: yes
+  tags: [docker_jellyfin]
+
+  roles:
+    - role: common_docker_compose_services 
+      vars:   
+        compose_app_name: jellyfin
+        compose_source_type: template
+        compose_template_src: templates/docker-compose/jellyfin.compose.yaml.j2
+
+        compose_env:
+          JELLYFIN_PUBLISHED_URL: "https://jellyfin.media.allanshomelab.com"
+          JELLYFIN_USER_UID: "1000"
+          JELLYFIN_GROUP_GID: "1000"
+
+        compose_paths:
+          - path: "/srv/jellyfin/config"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+
+          - path: "/srv/jellyfin/cache"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+
+          - path: "/mnt/media-library"
+            nfs: true
+            nfs_server: "{{ hostvars['procyon'].ansible_host }}"
+            nfs_path: "/mnt/pool1/media-library"
+            nfs_opts: "ro"

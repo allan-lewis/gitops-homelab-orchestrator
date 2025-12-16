@@ -1,0 +1,14 @@
+services:
+  plex:
+    image: "lscr.io/linuxserver/plex:1.42.2"
+    container_name: plex
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ={{ compose_env.PLEX_TZ }}
+      - PUID={{ compose_env.PLEX_PUID }}
+      - PGID={{ compose_env.PLEX_PGID }}
+    volumes:
+      - /srv/plex/config:/config
+      - /srv/plex/transcode:/transcode
+      - /mnt/media-library:/media-library:ro

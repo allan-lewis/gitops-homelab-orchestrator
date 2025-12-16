@@ -89,9 +89,15 @@ all:
                   hosts:
                     todash:
                   children:
+                    docker_compose_immich:
+                      hosts:
+                        misery:
                     docker_compose_it_tools:
                       hosts:
                         carrie:
+                    docker_compose_jellyfin:
+                      hosts:
+                        misery:
                     docker_compose_media_acquisition:
                       hosts:
                         patricia:
@@ -101,9 +107,16 @@ all:
                     docker_compose_ngb:
                       hosts:
                         carrie:
+                    docker_compose_plex:
+                      hosts:
+                        misery:
+                    docker_compose_tautulli:
+                      hosts:
+                        misery:
             ubuntu_misc:
               hosts:
                 carrie:
+                misery:
                 patricia:
             ubuntu_openvpn:
               hosts:

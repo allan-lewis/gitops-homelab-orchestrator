@@ -1,0 +1,37 @@
+- name: Plex Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_plex"
+  become: yes
+  gather_facts: yes
+  tags: [docker_plex]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:  
+        compose_app_name: plex
+        compose_source_type: template
+        compose_template_src: templates/docker-compose/plex.compose.yaml.j2
+
+        compose_env:
+          PLEX_TZ: "{{ gitops_tz }}"
+          PLEX_PUID: 1000
+          PLEX_PGID: 1000
+
+        compose_paths:
+          - path: "/srv/plex/config"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+
+          - path: "/srv/plex/transcode"
+            create: true
+            uid: 1000
+            gid: 1000
+            mode: "0755"
+
+          - path: "/mnt/media-library"
+            nfs: true
+            nfs_server: "{{ hostvars['procyon'].ansible_host }}"
+            nfs_path: "/mnt/pool1/media-library"
+            nfs_opts: "ro"
+
