@@ -19,10 +19,17 @@ backup_runner_healthchecks_status: "https://healthchecks.io/b/2/9f976a0d-58e9-40
   { 
     src: "/srv/immich/postgres",
     dest: "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/immich/postgres-volume" 
+  },
+  { 
+    src: "{{ postgres_db_backup_dir }}",
+    dest: "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/immich/db-dumps" 
   }
-  # { 
-  #   src: "{{ postgres_db_backup_dir }}",
-  #   dest: "/immich/db-dumps" 
-  # }
 ]
+
+is_db_backup_enabled: true
+postgres_db_container: immich_postgres
+postgres_db_name: "immich"
+postgres_db_user: "postgres"
+postgres_db_password: "{{ lookup('env', 'IMMICH_DB_PASSWORD') }}"
+postgres_db_backup_dir: /var/lib/postgres-db-dumps
 
