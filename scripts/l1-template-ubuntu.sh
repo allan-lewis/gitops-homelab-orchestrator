@@ -15,7 +15,7 @@ set -euo pipefail
 #   UBUNTU_CLOUD_IMAGE_URL  (default: Noble cloud image)
 #   UBUNTU_TEMPLATE_VMID    (if unset, we call pvesh get /cluster/nextid)
 #   UBUNTU_TEMPLATE_NAME    (default: ubuntu-2204-cloud-base-YYYYMMDD)
-#   UPDATE_STABLE           (set to 1 to update vm-template-stable.json)
+#   UPDATE_STABLE           (set to yes to update vm-template-stable.json)
 ###
 
 : "${PVE_ACCESS_HOST:?Missing PVE_ACCESS_HOST}"
@@ -26,8 +26,8 @@ set -euo pipefail
 
 UBUNTU_CLOUD_IMAGE_URL="${UBUNTU_CLOUD_IMAGE_URL:-https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img}"
 # If name not provided, include date so multiple runs don't collide
-UBUNTU_TEMPLATE_NAME="${UBUNTU_TEMPLATE_NAME:-ubuntu-2204-cloud-base-$(date -u +"%Y%m%d")}"
-UPDATE_STABLE="${UPDATE_STABLE:-0}"
+UBUNTU_TEMPLATE_NAME="${UBUNTU_TEMPLATE_NAME:-ubuntu-noble-$(date -u +"%Y%m%d")}"
+UPDATE_STABLE="${UPDATE_STABLE:-yes}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 BUILD_ROOT="${REPO_ROOT}/artifacts/.cloud-image/ubuntu"
@@ -53,7 +53,7 @@ else
 fi
 
 echo "==> Calculating SHA256..."
-sha256sum "${IMAGE_PATH}" | awk '{print $1}' > "${SHA_PATH}"
+sha256sum "${IMAGE_PATH}" | awk '{print $1}' >"${SHA_PATH}"
 SHA256="$(cat "${SHA_PATH}")"
 echo "SHA256: ${SHA256}"
 
@@ -112,7 +112,8 @@ qm create "\${VMID}" \
   --cores 2 \
   --net0 virtio,bridge=vmbr0 \
   --ostype l26 \
-  --machine q35
+  --machine q35 \
+  --tags "orchestrator,template,ubuntu"
 
 echo "Importing disk into storage \${STORAGE}..."
 qm importdisk "\${VMID}" "\${IMAGE_PATH}" "\${STORAGE}" --format qcow2
@@ -153,7 +154,7 @@ mkdir -p "${ARTIFACT_DIR}" "${SPEC_DIR}"
 
 MANIFEST_FILE="${ARTIFACT_DIR}/vm-template-$(date -u +"%Y%m%d-%H%M%S").json"
 
-cat > "${MANIFEST_FILE}" <<EOF
+cat >"${MANIFEST_FILE}" <<EOF
 {
   "created_at": "${TIMESTAMP_UTC}",
   "description": "Ubuntu cloud-image base with qemu-guest-agent and cloud-init drive",
@@ -169,11 +170,15 @@ EOF
 echo "Manifest written to: ${MANIFEST_FILE}"
 cat "${MANIFEST_FILE}"
 
-if [[ "${UPDATE_STABLE}" == "1" ]]; then
+if [[ "${UPDATE_STABLE}" == "yes" ]]; then
   STABLE_PATH="${SPEC_DIR}/vm-template-stable.json"
-  cp "${MANIFEST_FILE}" "${STABLE_PATH}"
+
+  # Create/update symlink atomically
+  ln -sfn "$(basename "${MANIFEST_FILE}")" "${STABLE_PATH}"
+
   echo
-  echo "Stable manifest updated at: ${STABLE_PATH}"
+  echo "Stable manifest now points to: ${STABLE_PATH}"
+  ls -l "${STABLE_PATH}"
 fi
 
 echo

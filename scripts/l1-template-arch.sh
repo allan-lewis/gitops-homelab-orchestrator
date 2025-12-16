@@ -9,7 +9,7 @@ set -euo pipefail
 #     - artifacts/l1_images/qemu-<vmid>-config.json (raw)
 #     - artifacts/l1_images/template-manifest.json (normalized)
 #     - infra/<os>/artifacts/vm-template-<timestamp>.json
-#   and optionally updates stable symlink (L1_UPDATE_STABLE=1)
+#   and optionally updates stable symlink (UPDATE_STABLE=yes)
 #
 
 # --- Resolve repo root -------------------------------------------------------
@@ -49,7 +49,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 SKIP_BUILD="${SKIP_BUILD:-0}"          # 0 = run packer, 1 = skip
-L1_UPDATE_STABLE="${L1_UPDATE_STABLE:-0}"
+UPDATE_STABLE="${UPDATE_STABLE:-yes}"
 
 mkdir -p artifacts artifacts/l1_images
 
@@ -162,13 +162,13 @@ cp "${norm_out}" "${dest_file}"
 
 echo "Saved timestamped manifest to ${dest_file}"
 
-if [[ "${L1_UPDATE_STABLE}" == "1" ]]; then
+if [[ "${UPDATE_STABLE}" == "yes" ]]; then
   spec_dir="infra/os/${OS_NAME}/spec"
   mkdir -p "${spec_dir}"
   ln -sf "../artifacts/${dest_file##*/}" "${spec_dir}/vm-template-stable.json"
   echo "Updated stable symlink -> ${spec_dir}/vm-template-stable.json"
 else
-  echo "Skipping stable symlink update (L1_UPDATE_STABLE=${L1_UPDATE_STABLE})"
+  echo "Skipping stable symlink update (UPDATE_STABLE=${UPDATE_STABLE})"
 fi
 
 echo "=== [L1] Completed (OS=${OS_NAME}, VMID=${vmid}) ==="

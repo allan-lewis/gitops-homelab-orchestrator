@@ -1,10 +1,10 @@
 {
-  "created_at": "2025-12-15T18:49:09Z",
+  "created_at": "2025-12-16T20:13:27Z",
   "description": "Ubuntu cloud-image base with qemu-guest-agent and cloud-init drive",
-  "name": "ubuntu-2204-cloud-base-20251215",
+  "name": "ubuntu-noble-20251216",
   "node": "shardik",
   "storage": "ssd0",
   "vmid": 101,
   "cloud_image_url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
-  "cloud_image_sha256": "8bf11afd901fdec5aad647a8a284243a2a0b80a81ac732ae618ab36afa09f2b4"
+  "cloud_image_sha256": "2b5f90ffe8180def601c021c874e55d8303e8bcbfc66fee2b94414f43ac5eb1f"
 }

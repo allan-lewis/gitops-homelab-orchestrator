@@ -17,9 +17,6 @@ export ANSIBLE_HOST_KEY_CHECKING := False
 export PIP_DISABLE_PIP_VERSION_CHECK := 1
 export RUN
 
-L1_UPDATE_STABLE ?= 0
-export L1_UPDATE_STABLE
-
 ifneq (,$(wildcard ./.env))
 include .env # load .env if present
 export

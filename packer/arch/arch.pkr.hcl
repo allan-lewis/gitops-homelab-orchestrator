@@ -76,7 +76,7 @@ source "proxmox-iso" "arch" {
   # --- Template metadata ---
   template_name        = local.computed_template_name
   template_description = "Arch base (BIOS) with qemu-guest-agent, cloud-init; custom autorun ISO"
-  tags                 = "arch;template"
+  tags                 = "arch;orchestrator;template"
 }
 
 build {

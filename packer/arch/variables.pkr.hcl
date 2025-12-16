@@ -65,7 +65,7 @@ variable "disk_gb" {
 
 variable "template_prefix" {
   type    = string
-  default = "arch-base-"
+  default = "arch-"
 }
 
 variable "template_name" {
