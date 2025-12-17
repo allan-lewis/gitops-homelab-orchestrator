@@ -20,7 +20,7 @@
         "tags": ["orchestrator", "terraform", "ubuntu", "docker", "misc"],
         "cpu": 4,
         "memory_mb": 8192,
-        "disk_gb": 64,
+        "disk_gb": 128,
         "template_ref": "ubuntu/docker/stable",
         "node": "shardik",
         "ipconfig": "ip=192.168.86.227/24,gw=192.168.86.1"
