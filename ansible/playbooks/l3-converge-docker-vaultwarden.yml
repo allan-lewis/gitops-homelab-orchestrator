@@ -1,0 +1,21 @@
+---
+- name: Vaultwarden Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_vaultwarden"
+  become: yes
+  gather_facts: yes
+  tags: [docker_vaultwarden]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: vaultwarden
+        compose_source_type: file
+        compose_file_src: files/docker-compose/vaultwarden.compose.yaml
+        compose_env: 
+          ADMIN_TOKEN:  "{{ lookup('env', 'VAULTWARDEN_ADMIN_TOKEN') }}"
+          SIGNUPS_ALLOWED: "false"
+        compose_paths:
+          - path: "/var/lib/vaultwarden"
+            create: true
+            mode: "0755"
+

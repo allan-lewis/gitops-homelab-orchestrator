@@ -18,6 +18,7 @@
 - import_playbook: l3-converge-docker-tautulli.yml
 - import_playbook: l3-converge-docker-jellyfin.yml
 - import_playbook: l3-converge-docker-immich.yml
+- import_playbook: l3-converge-docker-vaultwarden.yml
 
 - import_playbook: l3-converge-ubuntu-openvpn.yml
 

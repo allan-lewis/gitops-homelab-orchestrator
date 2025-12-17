@@ -74,6 +74,18 @@ traefik_services:
     host: tools.docker.allanshomelab.com
     url: "http://{{ hostvars['carrie'].ansible_host }}:8386"
     scheme: http
+  - name: vault1
+    host: vault.allanshomelab.com
+    url: "http://{{ hostvars['carrie'].ansible_host }}:35550"
+    scheme: http
+  - name: vault2
+    host: vault.allanandvaia.com
+    url: "http://{{ hostvars['carrie'].ansible_host }}:35550"
+    scheme: http
+  - name: vault3
+    host: vault.129monroe.com
+    url: "http://{{ hostvars['carrie'].ansible_host }}:35550"
+    scheme: http
   - name: ngb1
     host: nogeeksbrewing.com
     url: "http://{{ hostvars['carrie'].ansible_host }}:8080"

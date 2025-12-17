@@ -113,6 +113,9 @@ all:
                     docker_compose_tautulli:
                       hosts:
                         misery:
+                    docker_compose_vaultwarden:
+                      hosts:
+                        carrie:
             ubuntu_misc:
               hosts:
                 carrie:
