@@ -110,6 +110,9 @@ all:
                     docker_compose_plex:
                       hosts:
                         misery:
+                    docker_compose_portainer:
+                      hosts:
+                        carrie:
                     docker_compose_tautulli:
                       hosts:
                         misery:

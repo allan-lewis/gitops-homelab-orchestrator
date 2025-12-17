@@ -140,8 +140,8 @@ gatus_https_endpoints:
     group: "Sites (K8s)"
     url: "https://longhorn.k8s.allanshomelab.com"
   - name: Portainer
-    group: "Sites (K8s)"
-    url: "https://portainer.k8s.allanshomelab.com"
+    group: "Sites (Docker)"
+    url: "https://portainer.docker.allanshomelab.com"
     pattern: "*Portainer*"
   - name: Prometheus
     group: "Sites (K8s)"

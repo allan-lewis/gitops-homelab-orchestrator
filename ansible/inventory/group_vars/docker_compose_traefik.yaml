@@ -98,4 +98,7 @@ traefik_services:
     host: memos.allanandvaia.com
     url: "http://{{ hostvars['carrie'].ansible_host }}:5230"
     scheme: http
+  - name: portainer
+    host: portainer.docker.allanshomelab.com
+    url: "http://{{ hostvars['carrie'].ansible_host }}:9000"
 
