@@ -2,6 +2,10 @@
   { 
     "src": "{{ memos_data_dir }}",
     "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/memos" 
+  },
+  { 
+    "src": "/var/lib/vaultwarden",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/vaultwarden" 
   }
 ]
 
