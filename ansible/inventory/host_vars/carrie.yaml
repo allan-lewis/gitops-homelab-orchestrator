@@ -7,7 +7,10 @@ portainer_data_dir: "/var/lib/portainer"
   },
   { 
     "src": "{{ portainer_data_dir }}",
-    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/portainer" 
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/portainer"
+  },
+  {
+    "src": "/var/lib/vaultwarden",
+    "dest": "{{ backup_runner_user }}@{{ backup_runner_remote_host }}:{{ backup_runner_remote_base_path }}/vaultwarden" 
   }
 ]
-
