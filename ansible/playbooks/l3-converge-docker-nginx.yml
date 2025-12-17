@@ -1,0 +1,14 @@
+---
+- name: Nginx Docker Services
+  hosts: "{{ converge_group }}:&docker_compose_nginx"
+  become: yes
+  gather_facts: yes
+  tags: [docker_nginx]
+
+  roles:
+    - role: common_docker_compose_services
+      vars:
+        compose_app_name: nginx
+        compose_source_type: file
+        compose_file_src: files/docker-compose/nginx.compose.yaml
+

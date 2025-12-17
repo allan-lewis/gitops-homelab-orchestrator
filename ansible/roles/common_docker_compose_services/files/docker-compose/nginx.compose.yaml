@@ -1,0 +1,12 @@
+services:
+  nginx:
+    image: nginx:stable
+    container_name: nginx
+    restart: unless-stopped
+
+    ports:
+      - "8885:80"
+
+    security_opt:
+      - no-new-privileges:true
+

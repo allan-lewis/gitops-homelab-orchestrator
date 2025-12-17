@@ -107,6 +107,9 @@ all:
                     docker_compose_ngb:
                       hosts:
                         carrie:
+                    docker_compose_nginx:
+                      hosts:
+                        carrie:
                     docker_compose_plex:
                       hosts:
                         misery:
