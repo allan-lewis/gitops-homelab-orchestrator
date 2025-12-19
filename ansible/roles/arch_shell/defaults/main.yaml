@@ -17,6 +17,7 @@ dotfiles_stow_packages:
   - common-zsh
   - arch-zsh
   - common-starship
+  - common-lazyvim
 
 dotfiles_shell: "/usr/bin/zsh"
 

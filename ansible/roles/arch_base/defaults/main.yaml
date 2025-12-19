@@ -19,6 +19,7 @@ arch_base_packages:
   - bind
   - rsync
   - less
+  - base-devel
 
 arch_base_enable_timesyncd: true
 arch_base_timezone: "{{ gitops_tz | default('America/New_York') }}"

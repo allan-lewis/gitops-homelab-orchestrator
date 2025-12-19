@@ -1,0 +1,8 @@
+doppler_service_token: "{{ lookup('env', 'DOPPLER_SERVICE_TOKEN_ORCHESTRATOR') }}"
+doppler_config: "dev"
+doppler_project: "orchestrator"
+
+ssh_keys_install_private_for_ansible_user: true
+ssh_keys_install_public_for_ansible_user: true
+
+ansible_environment: "foo"
