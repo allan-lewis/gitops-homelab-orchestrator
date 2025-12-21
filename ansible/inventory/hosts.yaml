@@ -16,8 +16,8 @@ all:
     christine:
       ansible_host: 192.168.86.212
       gatus_slug: "(Windows 11)"
-    cujo:
-      ansible_host: 192.168.86.217
+    callahan:
+      ansible_host: 192.168.86.214
       gatus_slug: "(Arch Sandbox, BTW)"
     derry:
       ansible_host: 192.168.86.210
@@ -49,6 +49,9 @@ all:
     shardik:
       ansible_host: 192.168.86.201
       gatus_slug: "(Proxmox Hypervisor)"
+    cujo:
+      ansible_host: 192.168.86.215
+      gatus_slug: "(Ubuntu DevOps)"
     procyon:
       ansible_host: 192.168.86.106
       gatus_slug: "(NAS)"
@@ -61,9 +64,9 @@ all:
     susannah:
       ansible_host: 192.168.86.154
       gatus_slug: "(K8s Worker)"
-    todash:
-      ansible_host: 192.168.86.218
-      gatus_slug: "(Ubuntu Docker/Sandbox)"
+    barlow:
+      ansible_host: 192.168.86.213
+      gatus_slug: "(Ubuntu Sandbox)"
 
   children:
     fully_managed:

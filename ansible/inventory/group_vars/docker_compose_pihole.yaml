@@ -16,7 +16,9 @@ pihole_a_records:
   - name: "kvm.allanshomelab.com"
     address: "192.168.86.205"
   - name: "postgres.k8s.allanshomelab.com"
-    address: "192.168.86.196"     
+    address: "192.168.86.196" 
+  - name: "nginx.docker.allanshomelab.com"
+    address: "192.168.86.228"
 pihole_cname_records:
   - alias: "gatus.docker.allanshomelab.com"
     target: "docker.allanshomelab.com"
@@ -78,4 +80,3 @@ pihole_cname_records:
     target: "media.allanshomelab.com"
   - alias: "tools.docker.allanshomelab.com"
     target: "docker.allanshomelab.com"
-

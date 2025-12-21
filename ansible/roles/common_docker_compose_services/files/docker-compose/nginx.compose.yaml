@@ -5,8 +5,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "8885:80"
+      - "80:80"
 
     security_opt:
       - no-new-privileges:true
-
